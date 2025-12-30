@@ -1,0 +1,217 @@
+TALENT OPS - EMPLOYEE HANDBOOK 2024
+
+===================================
+Document ID: employee-handbook-2024
+Last Updated: December 2024
+===================================
+
+## WELCOME TO TALENT OPS!
+
+This handbook contains everything you need to know about working at Talent Ops.
+
+## 1. COMPANY VALUES
+
+### 1.1 Core Values
+- **Integrity**: We do the right thing, even when no one is watching
+- **Innovation**: We embrace change and creative solutions
+- **Collaboration**: We achieve more together than alone
+- **Excellence**: We deliver quality in everything we do
+- **Customer First**: Our customers are at the heart of all decisions
+
+### 1.2 Mission Statement
+"To empower organizations with world-class talent management solutions that drive growth and success."
+
+## 2. WORK SCHEDULE
+
+### 2.1 Regular Hours
+- Monday to Friday: 9:00 AM - 6:00 PM
+- Lunch break: 1:00 PM - 2:00 PM (1 hour)
+- Total work hours: 40 hours per week
+
+### 2.2 Flexible Hours
+- Core hours (mandatory): 10:00 AM - 4:00 PM
+- Flexible start: 8:00 AM - 10:00 AM
+- Flexible end: 4:00 PM - 7:00 PM
+- Requires manager approval
+
+### 2.3 Overtime
+- Overtime rate: 1.5x regular hourly rate
+- Prior approval required
+- Maximum: 10 hours per week
+- Compensatory time off available
+
+## 3. DRESS CODE
+
+### 3.1 Business Casual (Default)
+- Collared shirts, blouses
+- Dress pants, skirts (knee-length)
+- Closed-toe shoes
+- No jeans (except Fridays)
+
+### 3.2 Casual Fridays
+- Clean jeans allowed
+- T-shirts with company logo
+- Sneakers permitted
+- No shorts or flip-flops
+
+### 3.3 Client Meetings
+- Business formal attire
+- Suits for men
+- Business suits/dresses for women
+- Formal shoes required
+
+## 4. PERFORMANCE REVIEWS
+
+### 4.1 Review Cycle
+- Frequency: Quarterly
+- Annual comprehensive review in December
+- 30-day probation review for new hires
+- Mid-year review in June
+
+### 4.2 Review Criteria
+- Goal achievement (40%)
+- Quality of work (30%)
+- Collaboration & teamwork (20%)
+- Innovation & initiative (10%)
+
+### 4.3 Rating Scale
+- Outstanding: 5 (Top 10%)
+- Exceeds Expectations: 4 (20%)
+- Meets Expectations: 3 (60%)
+- Needs Improvement: 2 (8%)
+- Unsatisfactory: 1 (2%)
+
+## 5. COMPENSATION & BENEFITS
+
+### 5.1 Salary
+- Paid monthly on last working day
+- Direct deposit to bank account
+- Annual increment: Performance-based (3-15%)
+- Bonus: Up to 20% of annual salary
+
+### 5.2 Health Insurance
+- Coverage: Employee + family
+- Premium: 100% company-paid
+- Cashless hospitalization
+- Annual health checkup included
+
+### 5.3 Retirement Benefits
+- Company contributes 12% of basic salary
+- Employee can contribute 0-12%
+- Vesting period: 3 years
+
+## 6. TRAINING & DEVELOPMENT
+
+### 6.1 Annual Training Budget
+- Manager level: $2,000 per year
+- Individual contributor: $1,000 per year
+- Courses must be job-related
+
+### 6.2 Internal Training
+- Monthly skill-building workshops
+- Lunch & learn sessions
+- Mentorship program
+- Leadership development program
+
+### 6.3 Certifications
+- Company sponsors job-relevant certifications
+- Study leave available (see leave policy)
+- Certification bonus: $500 upon completion
+
+## 7. CODE OF CONDUCT
+
+### 7.1 Professional Behavior
+- Respect all colleagues
+- No discrimination or harassment
+- Professional communication
+- Punctuality is expected
+
+### 7.2 Confidentiality
+- All company data is confidential
+- No sharing of passwords
+- Lock computers when away
+- Report security incidents immediately
+
+### 7.3 Social Media
+- Don't speak on behalf of company
+- Don't share confidential information
+- Be professional in posts mentioning work
+- Follow company social media guidelines
+
+## 8. EQUIPMENT & TECHNOLOGY
+
+### 8.1 Provided Equipment
+- Laptop (refreshed every 3 years)
+- Monitor (dual screens for developers)
+- Mouse, keyboard, headphones
+- Mobile phone (for eligible roles)
+
+### 8.2 Personal Use
+- Limited personal use acceptable
+- No illegal downloads
+- No streaming during work hours
+- IT monitors usage
+
+### 8.3 Return Policy
+- All equipment must be returned on last day
+- Damaged equipment: Replacement cost deducted
+- Lost equipment: File police report + pay cost
+
+## 9. REMOTE WORK POLICY
+
+### 9.1 Eligibility
+- Completed 6 months with company
+- Consistently good performance
+- Role suitable for remote work
+- Manager approval required
+
+### 9.2 Remote Work Days
+- Maximum: 2 days per week
+- Core team days: Tuesdays & Thursdays (in-office)
+- Monthly all-hands: First Monday (mandatory in-office)
+
+### 9.3 Remote Work Requirements
+- Stable internet connection (minimum 50 Mbps)
+- Dedicated workspace
+- Available on chat/video during work hours
+- Attend all meetings
+
+## 10. TERMINATION
+
+### 10.1 Resignation
+- Notice period: 30 days (standard)
+- Notice period: 60 days (senior roles)
+- Email resignation to manager + HR
+- Exit interview mandatory
+
+### 10.2 Termination by Company
+- Notice: 30 days or pay in lieu
+- Severance: 1 month salary per year worked
+- Immediate termination for gross misconduct
+- Final settlement within 45 days
+
+### 10.3 Exit Process
+- Return all equipment
+- Knowledge transfer (2 weeks)
+- Clear all dues
+- Receive relieving letter + experience certificate
+
+## CONTACT INFORMATION
+
+**General HR Queries:**
+- Email: hr@talentops.com
+- Phone: +1-555-0100
+- Portal: Help Center
+
+**IT Support:**
+- Email: it@talentops.com
+- Phone: +1-555-0200
+- Slack: #it-support
+
+**Payroll Questions:**
+- Email: payroll@talentops.com
+- Available: 1st-5th of every month
+
+---
+
+For questions about this handbook, tag @employee-handbook in chatbot.

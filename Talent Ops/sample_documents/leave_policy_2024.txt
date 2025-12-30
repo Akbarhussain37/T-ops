@@ -1,0 +1,142 @@
+TALENT OPS - EMPLOYEE LEAVE POLICY 2024
+
+===================================
+Document ID: leave-policy-2024
+Last Updated: December 2024
+===================================
+
+## 1. LEAVE ENTITLEMENTS
+
+### 1.1 Annual Leave
+- All full-time employees: 20 days per year
+- Part-time employees: Pro-rated based on hours worked
+- Leave accrues monthly at 1.67 days per month
+- Maximum carryforward: 5 days to next year
+
+### 1.2 Sick Leave
+- Entitlement: 12 days per year (1 day per month)
+- No medical certificate required for 1-2 days
+- Medical certificate REQUIRED for 3+ consecutive days
+- Maximum accumulation: 30 days
+
+### 1.3 Casual Leave
+- Entitlement: 7 days per year
+- Cannot be carried forward
+- Minimum notice: 24 hours (except emergencies)
+- Maximum consecutive days: 3 days
+
+### 1.4 Public Holidays
+- All gazetted public holidays are paid
+- If working on public holiday: 2x pay + compensatory off
+
+## 2. LEAVE APPLICATION PROCESS
+
+### 2.1 Standard Process
+1. Submit leave request via Talent Ops portal
+2. Manager reviews within 48 hours
+3. Approval/rejection notified via email
+4. Update calendar after approval
+
+### 2.2 Emergency Leave
+- Call/message manager immediately
+- Submit formal request within 24 hours
+- Provide reason and documentation if required
+
+### 2.3 Notice Periods
+- Annual leave: 7 days advance notice
+- Casual leave: 24 hours advance notice
+- Sick leave: Same day notification (before 10 AM)
+
+## 3. LEAVE ESCALATION PROCESS
+
+If leave request not approved within 48 hours:
+
+**Step 1:** Contact your Team Lead
+**Step 2:** Escalate to Department Head (after 72 hours)
+**Step 3:** Final escalation to HR Director (after 5 business days)
+
+Emergency leaves are processed within 4 hours.
+
+## 4. SPECIAL LEAVE TYPES
+
+### 4.1 Maternity Leave
+- Duration: 26 weeks (6 months)
+- Paid leave: Full salary for entire duration
+- Notice required: 30 days before due date
+- Documents: Medical certificate, expected delivery date
+
+### 4.2 Paternity Leave
+- Duration: 15 days
+- Paid leave: Full salary
+- Must be taken within 60 days of child's birth
+- Documents: Birth certificate
+
+### 4.3 Bereavement Leave
+- Duration: 5 days for immediate family
+- Duration: 2 days for extended family
+- No documentation required for immediate family
+- Immediate family: Spouse, parent, child, sibling
+
+### 4.4 Study Leave
+- Maximum: 10 days per year
+- For job-related courses only
+- Requires manager + HR approval
+- Course must be pre-approved
+
+## 5. LEAVE REJECTION REASONS
+
+Common reasons for leave rejection:
+- Insufficient advance notice
+- Critical project deadline
+- Multiple team members on leave
+- Leave balance exhausted
+- Peak business period
+
+If rejected, you will receive:
+- Detailed reason for rejection
+- Alternative dates suggestion
+- Option to escalate (see Section 3)
+
+## 6. WORK FROM HOME POLICY
+
+Work from home is NOT considered leave but requires approval:
+- Maximum: 2 days per week
+- Must be requested 24 hours in advance
+- Manager has final discretion
+- Must be reachable during work hours (9 AM - 6 PM)
+
+## 7. NEGATIVE LEAVE BALANCE
+
+- Maximum negative balance: 3 days
+- Requires Department Head approval
+- Must be recovered within next quarter
+- Salary deduction if not recovered
+
+## 8. LEAVE DURING PROBATION
+
+Probation period (first 3 months):
+- No annual leave allowed
+- Sick leave: Only with medical certificate
+- Casual leave: Maximum 2 days
+- All other leave types: Unpaid
+
+## 9. LEAVE CANCELLATION
+
+Approved leave can be cancelled:
+- Minimum 48 hours before leave start date
+- No penalty for cancellation
+- Less than 48 hours: Requires manager approval
+
+## 10. CONTACT INFORMATION
+
+**Leave Queries:**
+- Email: hr@talentops.com
+- Phone: +1-555-0100
+- Portal: Leave Management → Help
+
+**Emergency Leave:**
+- HR Hotline: +1-555-0911 (24/7)
+- Manager contact required within 2 hours
+
+---
+For questions about this policy, tag @leave-policy in chatbot or contact HR directly.

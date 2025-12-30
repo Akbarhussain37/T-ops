@@ -89,6 +89,7 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, addToast, projectRol
             const { error } = await supabase.from('tasks').insert({
                 title: newTask.title, description: newTask.description, assigned_to: newTask.assigned_to,
                 due_date: newTask.due_date || null, priority: newTask.priority, created_by: user.id,
+                project_id: currentProjectId,
                 status: 'pending', lifecycle_state: 'requirement_refiner', sub_state: 'in_progress'
             });
             if (error) throw error;

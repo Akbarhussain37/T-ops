@@ -3,16 +3,18 @@ import { Send, Bot, User, MessageSquare, X, Move, Loader } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabaseClient';
 
-const CHATBOT_API_URL = 'http://localhost:8035/chat';
+const CHATBOT_API_URL = 'http://localhost:8000/api/chatbot/query';
+const SMART_BUTTONS_URL = 'http://localhost:8000/api/chatbot/context-buttons';
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([
-        { role: 'ai', text: 'Hello! I am your Talent Ops AI assistant. How can I help you today?' }
+        { role: 'ai', text: '👋 Hello! I can answer questions about company policies, projects, and documents. Ask me anything!' }
     ]);
     const [isLoading, setIsLoading] = useState(false);
     const [userProfile, setUserProfile] = useState(null);
+    const [smartButtons, setSmartButtons] = useState([]);
     const messagesEndRef = useRef(null);
 
     // Dragging state
@@ -72,70 +74,91 @@ const Chatbot = () => {
         setIsLoading(true);
 
         try {
-            // Check if backend is running
-            const healthCheck = await fetch('http://localhost:8035/health').catch(() => null);
+            // Check if AI Gateway is running
+            const healthCheck = await fetch('http://localhost:8000/health').catch(() => null);
 
             if (!healthCheck || !healthCheck.ok) {
                 setMessages(prev => [...prev, {
                     role: 'ai',
-                    text: '⚠️ Chatbot backend is not running. Please start the backend server first.\n\nTo start:\n1. Open terminal in slm-backend folder\n2. Run: python server.py\n3. Wait for "Running on http://localhost:8035"'
+                    text: '⚠️ AI Gateway is not running.\n\nTo start:\n1. Open terminal in modalgateway/ai-gateway\n2. Run: python main.py\n3. Wait for "AI Gateway ready!"'
                 }]);
                 setIsLoading(false);
                 return;
             }
 
-            // Send message to backend with page context
+            // Parse @document tags from query
+            let taggedDoc = null;
+            let cleanQuery = userMessage;
+
+            // Check for @tag or #tag syntax
+            const tagMatch = userMessage.match(/@(\S+)|#(\S+)/);
+            if (tagMatch) {
+                taggedDoc = tagMatch[1] || tagMatch[2];
+                // Remove tag from query for cleaner processing
+                cleanQuery = userMessage.replace(/@\S+|#\S+/, '').trim();
+
+                // Show which document is being queried
+                setMessages(prev => [...prev, {
+                    role: 'ai',
+                    text: `🔖 Searching in document: ${taggedDoc}...`
+                }]);
+            }
+
+            // Send query to AI Gateway with RAG
             const response = await fetch(CHATBOT_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    user_id: userProfile?.id || 'guest',
-                    role: userProfile?.role || 'team_lead',
-                    team_id: userProfile?.team_id || null,
-                    message: userMessage,
-                    // Page context for intent inference
-                    current_page: location.pathname,
-                    page_context: {
-                        path: location.pathname,
-                        search: location.search,
-                        hash: location.hash
-                    }
+                    query: cleanQuery || userMessage,
+                    context: {
+                        route: location.pathname,
+                        module: location.pathname.split('/').pop() || 'dashboard',
+                        role: userProfile?.role || 'executive',
+                        user_id: userProfile?.id || 'guest'
+                    },
+                    tagged_doc: taggedDoc ? { document_id: taggedDoc } : null
                 })
             });
 
             const data = await response.json();
 
-            // Handle different response types
-            if (data.reply === 'forbidden') {
+            // Handle RAG response
+            if (data.answer) {
+                let messageText = data.answer;
+
+                // Add confidence indicator
+                if (data.confidence) {
+                    const confidencePercent = (data.confidence * 100).toFixed(0);
+                    messageText += `\n\n📊 Confidence: ${confidencePercent}%`;
+                }
+
+                // Add sources if available
+                if (data.sources && data.sources.length > 0) {
+                    messageText += '\n\n📚 Sources: ' + data.sources.map(s => s.title || s.document_id).join(', ');
+                }
+
                 setMessages(prev => [...prev, {
                     role: 'ai',
-                    text: `🚫 ${data.message || data.reason || 'You do not have permission to perform this action.'}`
+                    text: messageText
                 }]);
-            } else if (data.message) {
+            } else if (data.out_of_scope) {
                 setMessages(prev => [...prev, {
                     role: 'ai',
-                    text: data.message
-                }]);
-            } else if (Array.isArray(data.reply) && data.reply.length > 0) {
-                // Format structured data response
-                const formattedData = JSON.stringify(data.reply, null, 2);
-                setMessages(prev => [...prev, {
-                    role: 'ai',
-                    text: `Here's what I found:\n\`\`\`json\n${formattedData}\n\`\`\``
+                    text: `⚠️ Out of scope: ${data.reason || 'This question is not related to company documents or policies.'}`
                 }]);
             } else {
                 setMessages(prev => [...prev, {
                     role: 'ai',
-                    text: 'I processed your request successfully!'
+                    text: data.message || 'I processed your request.'
                 }]);
             }
         } catch (error) {
             console.error('Chatbot error:', error);
             setMessages(prev => [...prev, {
                 role: 'ai',
-                text: `❌ Error: ${error.message}\n\nMake sure the chatbot backend is running on http://localhost:8035`
+                text: `❌ Error: ${error.message}\n\nMake sure the AI Gateway is running on http://localhost:8000`
             }]);
         } finally {
             setIsLoading(false);

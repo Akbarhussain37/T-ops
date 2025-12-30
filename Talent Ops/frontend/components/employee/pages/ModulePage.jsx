@@ -15,6 +15,7 @@ import StatusDemo from '../components/Demo/StatusDemo';
 import PayslipsPage from '../../shared/PayslipsPage';
 import AnnouncementsPage from '../../shared/AnnouncementsPage';
 import ProjectHierarchyDemo from '../../shared/ProjectHierarchyDemo';
+import ProjectDocuments from './ProjectDocuments';
 
 const ModulePage = ({ title, type }) => {
     const { addToast } = useToast();
@@ -1069,12 +1070,15 @@ const ModulePage = ({ title, type }) => {
             {type === 'tasks' ? (
                 <KanbanDemo />
             ) : (
-                <DataTable
-                    title={`${title} List`}
-                    columns={config.columns}
-                    data={config.data}
-                    onAction={handleAction}
-                />
+                <>
+                    {type === 'workforce' && <ProjectDocuments />}
+                    <DataTable
+                        title={`${title} List`}
+                        columns={config.columns}
+                        data={config.data}
+                        onAction={handleAction}
+                    />
+                </>
             )}
 
             {/* Apply Leave Modal - Redesigned */}

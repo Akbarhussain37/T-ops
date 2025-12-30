@@ -3,12 +3,13 @@ import { supabase } from '../../../lib/supabaseClient';
 import {
     generatePayslipNumber,
     calculatePresentDays,
-    calculateLeaveDays,
-    formatMonth
+    calculateLeaveDays
 } from '../../../utils/payslipHelpers';
+import { formatMonthYear } from '../../../utils/payrollCalculations';
 import { generatePayslipPDF, uploadPayslipPDF } from '../../../utils/pdfGenerator';
-import { X, FileText } from 'lucide-react';
+import { X, FileText, Plus } from 'lucide-react';
 import PayslipPreview from './PayslipPreview';
+import PayrollFormModal from '../PayrollFormModal';
 import './PayslipFormModal.css';
 
 const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
@@ -16,6 +17,8 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPreview, setShowPreview] = useState(false);
+    const [showCreatePayroll, setShowCreatePayroll] = useState(false);
+    const [payrollMissing, setPayrollMissing] = useState(false);
 
     // Form state
     const [selectedEmployee, setSelectedEmployee] = useState('');
@@ -142,7 +145,7 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
             setEmployeeData(employee);
 
             // Fetch payroll data
-            const monthStr = formatMonth(parseInt(selectedMonth), selectedYear);
+            const monthStr = formatMonthYear(parseInt(selectedMonth), selectedYear);
             console.log('Fetching payroll for employee:', selectedEmployee, 'month:', monthStr);
 
             const { data: payroll, error: payrollError } = await supabase
@@ -161,7 +164,8 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
                     hint: payrollError.hint,
                     code: payrollError.code
                 });
-                setError(`No payroll data found for this employee and month (${monthStr}). Please ensure payroll data exists.`);
+                setPayrollMissing(true);
+                setError(`No payroll data found for this employee and month (${monthStr}).`);
                 setPayrollData(null);
             } else {
                 console.log('Payroll data loaded successfully:', payroll);
@@ -201,7 +205,7 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
 
         try {
             // Prepare payslip data with explicit number conversions to prevent NaN errors
-            const monthStr = formatMonth(parseInt(selectedMonth), selectedYear);
+            const monthStr = formatMonthYear(parseInt(selectedMonth), selectedYear);
             const payslipData = {
                 payslipNumber,
                 employeeId: selectedEmployee,
@@ -296,6 +300,8 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
         setLeaveDays(0);
         setError('');
         setShowPreview(false);
+        setShowCreatePayroll(false);
+        setPayrollMissing(false);
 
         // Reset company details
         setCompanyName('Talent Ops');
@@ -306,6 +312,15 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
         setLogoPreview('');
 
         onClose();
+    };
+
+    const handlePayrollCreated = (message) => {
+        setShowCreatePayroll(false);
+        setPayrollMissing(false);
+        // Refetch employee data to get the newly created payroll
+        if (selectedEmployee && selectedMonth) {
+            fetchEmployeeData();
+        }
     };
 
     const months = [
@@ -341,7 +356,7 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
         employeeEmail: employeeData.email || 'N/A',
         employeeRole: employeeData.role || 'N/A',
         employeeLocation: employeeData.location || 'N/A',
-        month: formatMonth(parseInt(selectedMonth), selectedYear),
+        month: formatMonthYear(parseInt(selectedMonth), selectedYear),
         basicSalary: Number(payrollData.basic_salary) || 0,
         hra: Number(payrollData.hra) || 0,
         allowances: Number(payrollData.allowances) || 0,
@@ -385,8 +400,33 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
                     </button>
                 </div>
 
-                {/* Error Alert */}
-                {error && <div className="alert alert-error">{error}</div>}
+                {/* Error Alert with Action */}
+                {error && (
+                    <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <span>{error}</span>
+                        {payrollMissing && (
+                            <button
+                                onClick={() => setShowCreatePayroll(true)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    background: '#059669',
+                                    color: 'white',
+                                    border: 'none',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '0.875rem',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                <Plus size={16} /> Create Payroll
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Form */}
                 <form onSubmit={handleGeneratePayslip} className="payslip-form">
@@ -654,6 +694,13 @@ const PayslipFormModal = ({ isOpen, onClose, onSuccess }) => {
                     </div>
                 </form>
             </div>
+
+            {/* Payroll Creation Modal */}
+            <PayrollFormModal
+                isOpen={showCreatePayroll}
+                onClose={() => setShowCreatePayroll(false)}
+                onSuccess={handlePayrollCreated}
+            />
         </div>
     );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Search, MessageSquare, User, FileText, ClipboardList, Receipt } from 'lucide-react';
+import { Bell, Search, MessageSquare, User, FileText, ClipboardList, Receipt, File } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
@@ -115,7 +115,27 @@ const Header = () => {
                 });
             }
 
-            // 3. Search Announcements
+            // 3. Search Project Documents
+            const { data: documents } = await supabase
+                .from('project_documents')
+                .select('id, title, doc_type, created_at')
+                .ilike('title', `%${query}%`)
+                .limit(5);
+
+            if (documents) {
+                documents.forEach(d => {
+                    results.push({
+                        id: `doc-${d.id}`,
+                        type: 'Document',
+                        title: d.title,
+                        subtitle: d.doc_type || 'Project Document',
+                        path: '/teamlead-dashboard/workforce',
+                        icon: File
+                    });
+                });
+            }
+
+            // 4. Search Announcements
             const { data: announcements } = await supabase
                 .from('announcements')
                 .select('id, title, created_at')

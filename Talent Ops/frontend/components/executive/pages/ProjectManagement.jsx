@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, FolderOpen, UserPlus, X, Trash2, Search, Building2, ChevronDown, Check } from 'lucide-react';
+import { Plus, Users, FolderOpen, UserPlus, X, Trash2, Search, Building2, ChevronDown, Check, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 
 const ProjectManagement = ({ addToast = () => { } }) => {
@@ -123,6 +123,24 @@ const ProjectManagement = ({ addToast = () => { } }) => {
         }
     };
 
+    const updateProjectStatus = async (projectId, newStatus) => {
+        try {
+            const { error } = await supabase
+                .from('projects')
+                .update({ status: newStatus })
+                .eq('id', projectId);
+            if (error) throw error;
+
+            setProjects(projects.map(p => p.id === projectId ? { ...p, status: newStatus } : p));
+            if (selectedProject?.id === projectId) {
+                setSelectedProject({ ...selectedProject, status: newStatus });
+            }
+            addToast?.(`Project marked as ${newStatus}`, 'success');
+        } catch (error) {
+            addToast?.('Failed to update project status', 'error');
+        }
+    };
+
     const getRoleBadge = (role) => {
         const styles = {
             manager: { bg: '#fef3c7', color: '#b45309' },
@@ -130,6 +148,15 @@ const ProjectManagement = ({ addToast = () => { } }) => {
             consultant: { bg: '#f3f4f6', color: '#374151' }
         };
         return styles[role] || styles.consultant;
+    };
+
+    const getStatusBadge = (status) => {
+        const styles = {
+            active: { bg: '#dcfce7', color: '#166534', icon: CheckCircle },
+            completed: { bg: '#dbeafe', color: '#1e40af', icon: CheckCircle },
+            deactivated: { bg: '#f3f4f6', color: '#6b7280', icon: XCircle }
+        };
+        return styles[status?.toLowerCase()] || styles.active;
     };
 
     const filteredUsers = allUsers.filter(u =>
@@ -163,7 +190,19 @@ const ProjectManagement = ({ addToast = () => { } }) => {
                                 borderLeft: selectedProject?.id === project.id ? '3px solid #8b5cf6' : '3px solid transparent'
                             }}>
                             <div style={{ fontWeight: 600 }}>{project.name}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{project.status || 'active'}</div>
+                            <div style={{
+                                fontSize: '0.75rem',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                backgroundColor: getStatusBadge(project.status).bg,
+                                color: getStatusBadge(project.status).color,
+                                fontWeight: 600,
+                                textTransform: 'capitalize',
+                                display: 'inline-block',
+                                marginTop: '4px'
+                            }}>
+                                {project.status || 'active'}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -178,12 +217,33 @@ const ProjectManagement = ({ addToast = () => { } }) => {
                                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{selectedProject.name}</h2>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{projectMembers.length} members</p>
                             </div>
-                            <button onClick={() => setShowAddMember(true)} style={{
-                                padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                                color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
-                            }}>
-                                <UserPlus size={18} /> Add Member
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <select
+                                    value={selectedProject.status || 'active'}
+                                    onChange={(e) => updateProjectStatus(selectedProject.id, e.target.value)}
+                                    style={{
+                                        padding: '10px 16px',
+                                        borderRadius: '10px',
+                                        border: '2px solid var(--border)',
+                                        backgroundColor: getStatusBadge(selectedProject.status).bg,
+                                        color: getStatusBadge(selectedProject.status).color,
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        fontSize: '0.9rem',
+                                        textTransform: 'capitalize'
+                                    }}
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="deactivated">Deactivated</option>
+                                </select>
+                                <button onClick={() => setShowAddMember(true)} style={{
+                                    padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                                    color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                                }}>
+                                    <UserPlus size={18} /> Add Member
+                                </button>
+                            </div>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
                             {projectMembers.length === 0 ? (
