@@ -12,7 +12,7 @@ const ProjectManagement = ({ addToast = () => { } }) => {
     const [showAddProject, setShowAddProject] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const [searchUser, setSearchUser] = useState('');
-    const [selectedRole, setSelectedRole] = useState('employee');
+    const [selectedRole, setSelectedRole] = useState('consultant');
 
     useEffect(() => {
         fetchProjects();
@@ -48,9 +48,9 @@ const ProjectManagement = ({ addToast = () => { } }) => {
     const fetchProjectMembers = async (projectId) => {
         try {
             const { data, error } = await supabase
-                .from('project_members')
-                .select('*, profiles:user_id(id, full_name, email)')
-                .eq('project_id', projectId);
+                .from('team_members')
+                .select('*, profiles:profile_id(id, full_name, email)')
+                .eq('team_id', projectId);
             if (error) throw error;
             setProjectMembers(data || []);
         } catch (error) {
@@ -74,29 +74,36 @@ const ProjectManagement = ({ addToast = () => { } }) => {
 
     const addMember = async (userId) => {
         if (!selectedProject) return;
+
+        const insertData = {
+            team_id: selectedProject.id,
+            profile_id: userId,
+            role_in_project: selectedRole
+        };
+        console.log('🔍 Adding member with data:', insertData);
+        console.log('🔍 Selected project:', selectedProject);
+
         try {
-            const { error } = await supabase.from('project_members').insert({
-                project_id: selectedProject.id,
-                user_id: userId,
-                role: selectedRole
-            });
+            const { data, error } = await supabase.from('team_members').insert(insertData).select();
+            console.log('📝 Insert result - data:', data, 'error:', error);
             if (error) throw error;
             fetchProjectMembers(selectedProject.id);
             setShowAddMember(false);
             setSearchUser('');
             addToast?.('Member added!', 'success');
         } catch (error) {
+            console.error('❌ Full error object:', error);
             if (error.code === '23505') {
                 addToast?.('User already in this project', 'error');
             } else {
-                addToast?.('Failed to add member', 'error');
+                addToast?.('Failed to add member: ' + error.message, 'error');
             }
         }
     };
 
     const removeMember = async (memberId) => {
         try {
-            const { error } = await supabase.from('project_members').delete().eq('id', memberId);
+            const { error } = await supabase.from('team_members').delete().eq('id', memberId);
             if (error) throw error;
             setProjectMembers(projectMembers.filter(m => m.id !== memberId));
             addToast?.('Member removed', 'success');
@@ -107,7 +114,7 @@ const ProjectManagement = ({ addToast = () => { } }) => {
 
     const updateMemberRole = async (memberId, newRole) => {
         try {
-            const { error } = await supabase.from('project_members').update({ role: newRole }).eq('id', memberId);
+            const { error } = await supabase.from('team_members').update({ role_in_project: newRole }).eq('id', memberId);
             if (error) throw error;
             setProjectMembers(projectMembers.map(m => m.id === memberId ? { ...m, role: newRole } : m));
             addToast?.('Role updated', 'success');
@@ -120,9 +127,9 @@ const ProjectManagement = ({ addToast = () => { } }) => {
         const styles = {
             manager: { bg: '#fef3c7', color: '#b45309' },
             team_lead: { bg: '#dbeafe', color: '#1d4ed8' },
-            employee: { bg: '#f3f4f6', color: '#374151' }
+            consultant: { bg: '#f3f4f6', color: '#374151' }
         };
-        return styles[role] || styles.employee;
+        return styles[role] || styles.consultant;
     };
 
     const filteredUsers = allUsers.filter(u =>
@@ -205,7 +212,7 @@ const ProjectManagement = ({ addToast = () => { } }) => {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <select value={member.role} onChange={(e) => updateMemberRole(member.id, e.target.value)}
                                                         style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: badge.bg, color: badge.color, fontWeight: 600, cursor: 'pointer' }}>
-                                                        <option value="employee">Employee</option>
+                                                        <option value="consultant">Consultant</option>
                                                         <option value="team_lead">Team Lead</option>
                                                         <option value="manager">Manager</option>
                                                     </select>
@@ -259,7 +266,7 @@ const ProjectManagement = ({ addToast = () => { } }) => {
                             </div>
                             <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}
                                 style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                                <option value="employee">Employee</option>
+                                <option value="consultant">Consultant</option>
                                 <option value="team_lead">Team Lead</option>
                                 <option value="manager">Manager</option>
                             </select>

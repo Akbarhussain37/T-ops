@@ -302,7 +302,7 @@ REQUIRED_FIELDS = {
 }
 
 ROLE_PERMISSIONS = {
-    "employee": ["mark_attendance", "clock_in", "clock_out", "apply_leave", "view_my_tasks", "update_task_status", "submit_timesheet", "upload_document", "view_payslips", "get_payroll", "raise_support_ticket", "get_tasks", "view_tasks", "show_tasks", "get_balance", "chat", "greeting", "view_my_timesheets", "request_task_validation", "get_task_history"],
+    "consultant": ["mark_attendance", "clock_in", "clock_out", "apply_leave", "view_my_tasks", "update_task_status", "submit_timesheet", "upload_document", "view_payslips", "get_payroll", "raise_support_ticket", "get_tasks", "view_tasks", "show_tasks", "get_balance", "chat", "greeting", "view_my_timesheets", "request_task_validation", "get_task_history"],
     "team_lead": ["mark_attendance", "clock_in", "clock_out", "apply_leave", "view_my_tasks", "update_task_status", "submit_timesheet", "view_payslips", "get_payroll", "get_tasks", "view_tasks", "show_tasks", "get_balance", "chat", "greeting", "view_my_timesheets",
                  "view_team_attendance", "get_team_attendance", "get_attendance", "view_team_tasks", "view_team_leaves", "view_team_timesheets", "give_performance_feedback", "approve_timesheet", "raise_correction", "schedule_meeting", "request_task_validation", "get_task_history"],
     "manager": ["mark_attendance", "clock_in", "clock_out", "apply_leave", "view_my_tasks", "update_task_status", "submit_timesheet", "view_payslips", "get_payroll", "get_tasks", "view_tasks", "show_tasks", "get_balance", "chat", "greeting", "view_my_timesheets",
@@ -472,9 +472,10 @@ def detect_hard_action(user_text, user_role, logged_in_user_id):
     params = {}
     
     # Standardize Role
-    user_role = user_role.lower().strip() if user_role else "employee"
+    user_role = user_role.lower().strip() if user_role else "consultant"
     if user_role in ["executor", "executive"]: user_role = "executive"
     if user_role in ["team_lead", "teamlead"]: user_role = "team_lead"
+    if user_role in ["employee"]: user_role = "consultant"  # Map legacy to new
 
     if "task" in lower_text and ("assign" in lower_text or "create" in lower_text):
         action = "create_task"
@@ -649,9 +650,10 @@ def detect_hard_action(user_text, user_role, logged_in_user_id):
 def process_request(json_str, user_text, logged_in_user_id, user_role=None, team_id=None):
     try:
         # Normalize role: lower, strip
-        user_role = user_role.lower().strip() if user_role else "employee"
+        user_role = user_role.lower().strip() if user_role else "consultant"
         if user_role in ["executor", "executive"]: user_role = "executive"
         if user_role in ["team_lead", "teamlead"]: user_role = "team_lead"
+        if user_role in ["employee"]: user_role = "consultant"  # Map legacy to new
         
         # [CRITICAL BEHAVIORAL REDIRECT] Team Leads cannot approve leaves
         is_leave_attempt = any(kw in user_text.lower() for kw in ["leave", "approve", "reject"]) and "timesheet" not in user_text.lower() and "attendance" not in user_text.lower()

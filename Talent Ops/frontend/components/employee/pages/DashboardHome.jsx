@@ -32,7 +32,6 @@ const DashboardHome = () => {
     const [selectedDate, setSelectedDate] = useState(today);
 
     const [timeline, setTimeline] = useState([]);
-    const [tasks, setTasks] = useState([]);
     const [attendanceData, setAttendanceData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -56,15 +55,7 @@ const DashboardHome = () => {
                 const { data: { user } } = await supabase.auth.getUser();
 
                 if (user) {
-                    // 1. Fetch Tasks
-                    const { data: tasksData } = await supabase
-                        .from('tasks')
-                        .select('*')
-                        .eq('assigned_to', user.id);
-
-                    if (tasksData) setTasks(tasksData);
-
-                    // 2. Fetch Attendance (count present/absent days)
+                    // 1. Fetch Attendance (count present/absent days)
                     const { data: attendance } = await supabase
                         .from('attendance')
                         .select('*')
@@ -101,19 +92,7 @@ const DashboardHome = () => {
                     // 5. Fetch Timeline/Events
                     let combinedEvents = [];
 
-                    if (tasksData) {
-                        const taskEvents = tasksData
-                            .filter(t => t.due_date)
-                            .map(t => ({
-                                id: `task-${t.id}`,
-                                time: '09:00',
-                                title: `Task: ${t.title}`,
-                                location: `${t.priority || t.status}`,
-                                color: '#fef3c7',
-                                date: t.due_date
-                            }));
-                        combinedEvents = [...combinedEvents, ...taskEvents];
-                    }
+                    // Tasks were removed from consultant view, so no task events
 
                     const { data: announcements } = await supabase
                         .from('announcements')
@@ -184,10 +163,6 @@ const DashboardHome = () => {
     useEffect(() => {
         const channel = supabase
             .channel('employee-dashboard-realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
-                console.log('Realtime Task Update:', payload);
-                setRefreshTrigger(prev => prev + 1);
-            })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, (payload) => {
                 console.log('Realtime Attendance Update:', payload);
                 setRefreshTrigger(prev => prev + 1);
@@ -214,13 +189,6 @@ const DashboardHome = () => {
             supabase.removeChannel(channel);
         };
     }, []);
-
-    // Calculate Stats
-    const myTaskStats = {
-        pending: tasks.filter(t => t.status === 'pending' || t.status === 'Pending').length,
-        inProgress: tasks.filter(t => t.status === 'in_progress' || t.status === 'In Progress').length,
-        completed: tasks.filter(t => t.status === 'done' || t.status === 'Completed').length
-    };
 
     // Calculate attendance stats from actual data
     const attendanceStats = {
@@ -371,10 +339,9 @@ const DashboardHome = () => {
                                 <div style={{ width: '30px', height: '20px', backgroundColor: '#422006', borderRadius: '15px 15px 0 0', opacity: 0.8 }}></div>
                             </div>
                         </div>
-
-                        {/* My Tasks Status Card (Blue) - Moved Here */}
+                        {/* Project Documents Card (Blue) */}
                         <div
-                            onClick={() => navigate('/employee-dashboard/tasks')}
+                            onClick={() => navigate('/employee-dashboard/documents')}
                             style={{
                                 backgroundColor: '#bfdbfe', borderRadius: '24px', padding: '24px',
                                 display: 'flex', flexDirection: 'column', minHeight: '240px',
@@ -384,72 +351,10 @@ const DashboardHome = () => {
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '24px' }}>My Tasks Status:</h3>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <div>
-                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#fff' }}>{myTaskStats.pending}</span>
-                                    <p style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#1e3a8a', marginTop: '4px' }}>PENDING</p>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#fff' }}>{myTaskStats.inProgress}</span>
-                                    <p style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#1e3a8a', marginTop: '4px' }}>IN PROGRESS</p>
-                                </div>
-                                <div>
-                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#fff' }}>{myTaskStats.completed}</span>
-                                    <p style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#1e3a8a', marginTop: '4px' }}>COMPLETED</p>
-                                </div>
-                            </div>
-
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '24px' }}>📄 Project Documents</h3>
+                            <p style={{ color: '#3b82f6', fontSize: '0.9rem' }}>View project documentation, tech stack, and requirements shared by your manager.</p>
                             {/* Decorative Triangle */}
                             <div style={{ position: 'absolute', bottom: 0, right: 0, width: '0', height: '0', borderStyle: 'solid', borderWidth: '0 0 100px 100px', borderColor: 'transparent transparent rgba(255,255,255,0.3) transparent' }}></div>
-                        </div>
-                    </div>
-
-                    {/* Team Analytics Card (Green) - Moved to Bottom, Full Width */}
-                    <div style={{ backgroundColor: '#bbf7d0', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '200px' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#14532d', marginBottom: '16px' }}>Your Tasks:</h3>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {tasks.map((task) => (
-                                <div
-                                    key={task.id}
-                                    onClick={() => navigate('/employee-dashboard/tasks', { state: { taskId: task.id } })}
-                                    style={{
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        padding: '12px 16px',
-                                        backgroundColor: 'rgba(255,255,255,0.4)',
-                                        borderRadius: '12px',
-                                        transition: 'transform 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(4px)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#14532d', fontSize: '0.8rem' }}>
-                                            T
-                                        </div>
-                                        <div>
-                                            <p style={{ fontWeight: 'bold', color: '#14532d', fontSize: '0.9rem' }}>{task.title}</p>
-                                            <p style={{ fontSize: '0.75rem', color: '#166534' }}>Due: {task.due_date || 'No Date'}</p>
-                                        </div>
-                                    </div>
-                                    <span style={{
-                                        fontSize: '0.75rem',
-                                        fontWeight: 'bold',
-                                        color: task.status === 'Completed' ? '#15803d' : task.status === 'In Progress' ? '#b45309' : '#b91c1c',
-                                        backgroundColor: '#fff',
-                                        padding: '4px 8px',
-                                        borderRadius: '12px',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                    }}>
-                                        {task.status}
-                                    </span>
-                                </div>
-                            ))}
                         </div>
                     </div>
 

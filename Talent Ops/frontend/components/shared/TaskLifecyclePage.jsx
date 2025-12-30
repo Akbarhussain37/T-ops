@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, Clock, Eye, X, CheckCircle, XCircle, Send, History, ChevronRight, AlertCircle, Upload, FileText, Paperclip } from 'lucide-react';
+import { Search, Calendar, Clock, Eye, X, CheckCircle, XCircle, Send, History, ChevronRight, AlertCircle, Upload, FileText, Paperclip, Plus, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 // Lifecycle phases in order
@@ -15,7 +15,7 @@ const LIFECYCLE_PHASES = [
 const getPhaseIndex = (phase) => LIFECYCLE_PHASES.findIndex(p => p.key === phase);
 const getPhaseLabel = (phase) => LIFECYCLE_PHASES.find(p => p.key === phase)?.label || phase;
 
-const TaskLifecyclePage = ({ userRole = 'employee', userId, addToast }) => {
+const TaskLifecyclePage = ({ userRole = 'employee', userId, addToast, projectRole = null, currentProjectId = null }) => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('All');
@@ -33,15 +33,78 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, addToast }) => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploading, setUploading] = useState(false);
 
+    // Add Task states (for managers/team leads)
+    const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [newTask, setNewTask] = useState({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium' });
+
+    // Check if user can add tasks - check both org role and project role
+    const isManager = userRole === 'manager' || userRole === 'team_lead' || projectRole === 'manager' || projectRole === 'team_lead';
+
     useEffect(() => {
         fetchTasks();
-    }, [userId, userRole]);
+        if (isManager && currentProjectId) fetchTeamMembers();
+    }, [userId, userRole, projectRole, currentProjectId]);
+
+    const fetchTeamMembers = async () => {
+        console.log('🔍 fetchTeamMembers called, currentProjectId:', currentProjectId);
+        try {
+            // First try to fetch team members from the current project
+            const { data, error } = await supabase
+                .from('team_members')
+                .select(`
+                    profile_id,
+                    role_in_project,
+                    profiles:profile_id (id, full_name, email, role)
+                `)
+                .eq('team_id', currentProjectId);
+
+            console.log('📋 team_members query result:', { data, error, count: data?.length });
+
+            if (!error && data && data.length > 0) {
+                // Transform to flat structure for dropdown
+                const members = data.filter(m => m.profiles).map(m => ({
+                    id: m.profiles.id,
+                    full_name: m.profiles.full_name,
+                    email: m.profiles.email,
+                    role: m.role_in_project || m.profiles.role
+                }));
+                setTeamMembers(members);
+            } else {
+                // Fallback: if no team_members, fetch all profiles (for projects without team setup)
+                console.log('⚠️ No team_members found, falling back to all profiles');
+                const { data: profiles, error: profError } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, email, role');
+                if (!profError && profiles) setTeamMembers(profiles);
+            }
+        } catch (err) { console.error('Error fetching team members:', err); }
+    };
+
+    const handleAddTask = async () => {
+        if (!newTask.title.trim()) { addToast?.('Please enter a task title', 'error'); return; }
+        if (!newTask.assigned_to) { addToast?.('Please select a team member', 'error'); return; }
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const { error } = await supabase.from('tasks').insert({
+                title: newTask.title, description: newTask.description, assigned_to: newTask.assigned_to,
+                due_date: newTask.due_date || null, priority: newTask.priority, created_by: user.id,
+                status: 'pending', lifecycle_state: 'requirement_refiner', sub_state: 'in_progress'
+            });
+            if (error) throw error;
+            addToast?.('Task created successfully!', 'success');
+            setShowAddTaskModal(false);
+            setNewTask({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium' });
+            fetchTasks();
+        } catch (err) { addToast?.('Failed to create task: ' + err.message, 'error'); }
+    };
 
     const fetchTasks = async () => {
         setLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
+
 
             let query = supabase.from('tasks').select('*').eq('assigned_to', user.id);
             const { data: tasksData, error } = await query;
@@ -198,9 +261,26 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, addToast }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Your Tasks</h2>
-                <p style={{ color: 'var(--text-secondary)' }}>Track your tasks through the lifecycle</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Your Tasks</h2>
+                    <p style={{ color: 'var(--text-secondary)' }}>Track your tasks through the lifecycle</p>
+                </div>
+                {isManager && (
+                    <button
+                        onClick={() => setShowAddTaskModal(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '12px 20px', borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            color: 'white', border: 'none', cursor: 'pointer',
+                            fontWeight: 600, fontSize: '0.9rem',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                        }}
+                    >
+                        <Plus size={18} /> Add Task
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: 'var(--surface)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
@@ -424,6 +504,98 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, addToast }) => {
                                 </button>
                             )}
                             <button onClick={() => setShowTaskModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', backgroundColor: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Task Modal for Managers/Team Leads */}
+            {showAddTaskModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', zIndex: 1002
+                }}>
+                    <div style={{
+                        backgroundColor: 'white', borderRadius: '20px', padding: '28px',
+                        width: '100%', maxWidth: '500px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b' }}>➕ Add New Task</h2>
+                            <button onClick={() => setShowAddTaskModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <X size={24} color="#64748b" />
+                            </button>
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: '#374151' }}>Task Title *</label>
+                            <input
+                                type="text"
+                                value={newTask.title}
+                                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                                placeholder="Enter task title"
+                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: '#374151' }}>Description</label>
+                            <textarea
+                                value={newTask.description}
+                                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                placeholder="Task description..."
+                                rows={3}
+                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.95rem', resize: 'vertical', boxSizing: 'border-box' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: '#374151' }}>Assign To *</label>
+                            <select
+                                value={newTask.assigned_to}
+                                onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
+                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                            >
+                                <option value="">Select team member</option>
+                                {teamMembers.map(m => (
+                                    <option key={m.id} value={m.id}>
+                                        {m.full_name || m.email} ({m.role || 'employee'})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: '#374151' }}>Due Date</label>
+                                <input
+                                    type="date"
+                                    value={newTask.due_date}
+                                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                                />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px', color: '#374151' }}>Priority</label>
+                                <select
+                                    value={newTask.priority}
+                                    onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setShowAddTaskModal(false)} style={{ padding: '10px 20px', borderRadius: '10px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontWeight: 600 }}>
+                                Cancel
+                            </button>
+                            <button onClick={handleAddTask} style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}>
+                                Create Task
+                            </button>
                         </div>
                     </div>
                 </div>

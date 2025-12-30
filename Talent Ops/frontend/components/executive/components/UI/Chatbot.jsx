@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, MessageSquare, X, Move, Loader } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabaseClient';
 
 const CHATBOT_API_URL = 'http://localhost:8035/chat';
@@ -22,6 +23,10 @@ const Chatbot = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const containerRef = useRef(null);
+
+    // Get current page context
+    const location = useLocation();
+
 
     // Fetch user profile on mount
     useEffect(() => {
@@ -79,7 +84,7 @@ const Chatbot = () => {
                 return;
             }
 
-            // Send message to backend
+            // Send message to backend with page context
             const response = await fetch(CHATBOT_API_URL, {
                 method: 'POST',
                 headers: {
@@ -87,9 +92,16 @@ const Chatbot = () => {
                 },
                 body: JSON.stringify({
                     user_id: userProfile?.id || 'guest',
-                    role: userProfile?.role || 'employee',
+                    role: userProfile?.role || 'executive',
                     team_id: userProfile?.team_id || null,
-                    message: userMessage
+                    message: userMessage,
+                    // Page context for intent inference
+                    current_page: location.pathname,
+                    page_context: {
+                        path: location.pathname,
+                        search: location.search,
+                        hash: location.hash
+                    }
                 })
             });
 

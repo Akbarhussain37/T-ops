@@ -56,13 +56,20 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         { icon: FileText, label: 'Policies', path: '/employee-dashboard/policies' },
         { icon: Megaphone, label: 'Announcements', path: '/employee-dashboard/announcements' },
         { icon: MessageCircle, label: 'Messages', path: '/employee-dashboard/messages' },
+        { icon: Network, label: 'Org Hierarchy', path: '/employee-dashboard/org-hierarchy' },
         { icon: Settings, label: 'Profile', path: '/employee-dashboard/settings' },
     ];
 
     // Role-based project menu configurations
     const projectMenusByRole = {
+        consultant: [
+            { icon: FileText, label: 'Documents', path: '/employee-dashboard/documents' },
+            { icon: Users, label: 'Team', path: '/employee-dashboard/employees' },
+            { icon: BarChart2, label: 'Analytics', path: '/employee-dashboard/analytics' },
+            { icon: Network, label: 'Hierarchy', path: '/employee-dashboard/project-hierarchy' },
+        ],
         employee: [
-            { icon: ListTodo, label: 'My Tasks', path: '/employee-dashboard/tasks' },
+            { icon: FileText, label: 'Documents', path: '/employee-dashboard/documents' },
             { icon: Users, label: 'Team', path: '/employee-dashboard/employees' },
             { icon: BarChart2, label: 'Analytics', path: '/employee-dashboard/analytics' },
             { icon: Network, label: 'Hierarchy', path: '/employee-dashboard/project-hierarchy' },
@@ -88,14 +95,14 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     };
 
     // Get menu items based on current project role
-    const projectMenuItems = projectMenusByRole[projectRole] || projectMenusByRole.employee;
+    const projectMenuItems = projectMenusByRole[projectRole] || projectMenusByRole.consultant;
 
     // Role badge colors
     const getRoleBadge = (role) => {
         switch (role) {
             case 'manager': return { color: '#ef4444', label: 'Manager', emoji: '🔴' };
             case 'team_lead': return { color: '#eab308', label: 'Team Lead', emoji: '🟡' };
-            default: return { color: '#22c55e', label: 'Employee', emoji: '🟢' };
+            default: return { color: '#22c55e', label: 'Consultant', emoji: '🟢' };
         }
     };
 

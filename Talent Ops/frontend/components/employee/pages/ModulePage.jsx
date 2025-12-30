@@ -4,6 +4,7 @@ import { Plus, X, Eye, Mail, Phone, MapPin, Calendar, Briefcase, Download } from
 import DataTable from '../components/UI/DataTable';
 import { useToast } from '../context/ToastContext';
 import { useUser } from '../context/UserContext';
+import { useProject } from '../context/ProjectContext';
 import AnalyticsDemo from '../components/Demo/AnalyticsDemo';
 import KanbanDemo from '../components/Demo/KanbanDemo';
 import TaskLifecyclePage from '../../shared/TaskLifecyclePage';
@@ -18,6 +19,7 @@ import ProjectHierarchyDemo from '../../shared/ProjectHierarchyDemo';
 const ModulePage = ({ title, type }) => {
     const { addToast } = useToast();
     const { currentTeam, userName, userId, teamId, userRole } = useUser();
+    const { projectRole, currentProject } = useProject();
 
     // State for leave requests
     const [leaveRequests, setLeaveRequests] = useState([]);
@@ -643,7 +645,7 @@ const ModulePage = ({ title, type }) => {
 
     // Render specific demos for certain types
     if (type === 'analytics') return <AnalyticsDemo />;
-    if (type === 'tasks') return <TaskLifecyclePage userRole={userRole} userId={userId} addToast={addToast} />;
+    if (type === 'tasks') return <TaskLifecyclePage userRole={userRole} userId={userId} addToast={addToast} projectRole={projectRole} currentProjectId={currentProject?.id} />;
     if (title === 'Team Hierarchy' || title === 'Organizational Hierarchy') return <HierarchyDemo />;
     if (title === 'Project Hierarchy') return <ProjectHierarchyDemo />;
     if (title === 'Settings') return <SettingsDemo />;
