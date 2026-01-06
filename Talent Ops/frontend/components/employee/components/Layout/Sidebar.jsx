@@ -221,7 +221,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             }}>
                 {!isCollapsed && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', borderRadius: '8px' }} />
                         <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Talent Ops</h1>
                     </div>
                 )}

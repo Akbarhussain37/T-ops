@@ -34,6 +34,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
         full_name: '',
         email: '',
         role: 'employee',
+        job_title: '',
+        employment_type: 'Full-Time', // Added employment_type
         department_id: '', // Added department_id
         monthly_leave_quota: 3,
         basic_salary: '',
@@ -61,6 +63,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
                 full_name: employee.name || '',
                 email: employee.email || '',
                 role: employee.role || 'employee',
+                job_title: '', // Will be updated by fetchEmployeeDepartment
+                employment_type: 'full_time', // Will be updated
                 department_id: '', // Will be updated by fetchEmployeeDepartment
                 monthly_leave_quota: employee.monthly_leave_quota || 3,
                 basic_salary: '',
@@ -94,7 +98,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
         try {
             const { data: profile, error } = await supabase
                 .from('profiles')
-                .select('department, join_date')
+                .select('department, join_date, job_title, employment_type')
                 .eq('id', employee.id)
                 .single();
 
@@ -102,6 +106,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
                 setFormData(prev => ({
                     ...prev,
                     department_id: profile.department || '',
+                    job_title: profile.job_title || '',
+                    employment_type: profile.employment_type || 'full_time',
                     joinDate: profile.join_date || ''
                 }));
             }
@@ -229,6 +235,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
             console.log('Updating employee with data:', {
                 full_name: formData.full_name,
                 role: formData.role,
+                job_title: formData.job_title,
+                employment_type: formData.employment_type,
                 department: formData.department_id || null,
                 monthly_leave_quota: formData.monthly_leave_quota,
                 join_date: formData.joinDate,
@@ -239,6 +247,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
                 .update({
                     full_name: formData.full_name,
                     role: formData.role,
+                    job_title: formData.job_title,
+                    employment_type: formData.employment_type,
                     department: formData.department_id || null,
                     monthly_leave_quota: formData.monthly_leave_quota,
                     join_date: formData.joinDate,
@@ -535,6 +545,27 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
                             </select>
                         </div>
 
+                        {/* Job Title */}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
+                                Job Title
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.job_title}
+                                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                                placeholder="e.g. Senior Software Engineer"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border)',
+                                    backgroundColor: 'var(--background)',
+                                    color: 'var(--text-primary)',
+                                }}
+                            />
+                        </div>
+
                         {/* Department */}
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
@@ -559,6 +590,33 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
                                         {dept.department_name}
                                     </option>
                                 ))}
+                            </select>
+                        </div>
+
+                        {/* Employment Type */}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
+                                Employment Type
+                            </label>
+                            <select
+                                value={formData.employment_type}
+                                onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border)',
+                                    backgroundColor: 'var(--background)',
+                                    color: 'var(--text-primary)',
+                                }}
+                            >
+                                <option value="full_time">Full Time</option>
+                                <option value="part_time">Part Time</option>
+                                <option value="contract">Contract</option>
+                                <option value="intern">Intern</option>
+                                <option value="trainee">Trainee</option>
+                                <option value="freelance">Freelance</option>
+                                <option value="probation">Probation</option>
                             </select>
                         </div>
 

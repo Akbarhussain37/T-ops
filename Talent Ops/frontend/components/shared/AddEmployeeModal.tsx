@@ -34,6 +34,8 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
         email: '',
         password: '',
         role: 'employee',
+        job_title: '',
+        employment_type: 'full_time', // Changed default to lowercase snake_case
         department_id: '', // Added department_id
         monthly_leave_quota: 3,
         basic_salary: '',
@@ -122,6 +124,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                         hra: parseFloat(formData.hra),
                         allowances: parseFloat(formData.allowances) || 0,
                         join_date: formData.joinDate,
+                        employment_type: formData.employment_type,
                     }),
                 }
             );
@@ -141,7 +144,7 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
             }
 
             // If a project was selected, add the user to project_members
-            if (selectedProjects.length > 0) {
+            if (response.ok) {
                 console.log('Adding user to project_members...');
 
                 // Get the user_id - either from the response or by querying
@@ -163,12 +166,13 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                 }
 
                 if (userId) {
-                    // Update profile with department if selected
-                    // Update profile with department and join date
-                    if (formData.department_id || formData.joinDate) {
+                    // Update profile with department, job_title and join date
+                    if (formData.department_id || formData.joinDate || formData.job_title) {
                         const updateData: any = {};
                         if (formData.department_id) updateData.department = formData.department_id;
                         if (formData.joinDate) updateData.join_date = formData.joinDate;
+                        if (formData.job_title) updateData.job_title = formData.job_title;
+                        if (formData.employment_type) updateData.employment_type = formData.employment_type;
 
                         console.log('Updating profile for user:', userId, 'with data:', updateData);
                         const { data: updateResult, error: updateError } = await supabase
@@ -214,6 +218,8 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                 email: '',
                 password: '',
                 role: 'employee',
+                job_title: '',
+                employment_type: 'full_time',
                 department_id: '',
                 monthly_leave_quota: 3,
                 basic_salary: '',
@@ -409,6 +415,54 @@ export const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onCl
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>
                             {/* Role (moved here for better layout) */}
                             {/* This is handled above, so we'll add Project here */}
+                        </div>
+
+                        {/* Job Title */}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
+                                Job Title
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.job_title}
+                                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                                placeholder="e.g. Senior Software Engineer"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border)',
+                                    backgroundColor: 'var(--background)',
+                                    color: 'var(--text-primary)',
+                                }}
+                            />
+                        </div>
+
+                        {/* Employment Type */}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
+                                Employment Type
+                            </label>
+                            <select
+                                value={formData.employment_type}
+                                onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border)',
+                                    backgroundColor: 'var(--background)',
+                                    color: 'var(--text-primary)',
+                                }}
+                            >
+                                <option value="full_time">Full Time</option>
+                                <option value="part_time">Part Time</option>
+                                <option value="contract">Contract</option>
+                                <option value="intern">Intern</option>
+                                <option value="trainee">Trainee</option>
+                                <option value="freelance">Freelance</option>
+                                <option value="probation">Probation</option>
+                            </select>
                         </div>
 
                         {/* Department */}

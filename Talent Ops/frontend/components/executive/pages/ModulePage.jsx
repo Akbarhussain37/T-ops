@@ -145,6 +145,8 @@ const ModulePage = ({ title, type }) => {
                             role, 
                             department,
                             department,
+                            job_title,
+                            employment_type,
                             created_at,
                             join_date
                         `);
@@ -294,6 +296,8 @@ const ModulePage = ({ title, type }) => {
                                 name: emp.full_name || 'N/A',
                                 email: emp.email || 'N/A',
                                 role: emp.role || 'N/A',
+                                job_title: emp.job_title,
+                                employment_type: emp.employment_type || 'Full-Time',
                                 team_id: emp.team_id,
                                 dept: teamName, // Shows Project/Team
                                 department_display: departmentNameDisplay,
@@ -990,7 +994,8 @@ const ModulePage = ({ title, type }) => {
                         </div>
                     )
                 },
-                { header: 'Role', accessor: 'role' },
+
+                { header: 'Job Title', accessor: 'job_title' },
                 { header: 'Department', accessor: 'department_display' },
                 { header: 'Project', accessor: 'dept' },
                 { header: 'Join Date', accessor: 'joinDate' },
@@ -1558,7 +1563,9 @@ const ModulePage = ({ title, type }) => {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <h4 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '4px' }}>{selectedEmployee.name}</h4>
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '8px' }}>{selectedEmployee.role}</p>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '8px' }}>
+                                        {selectedEmployee.job_title ? `${selectedEmployee.job_title} (${selectedEmployee.role})` : selectedEmployee.role}
+                                    </p>
                                     <span style={{
                                         padding: '4px 12px',
                                         borderRadius: '12px',
@@ -1619,6 +1626,16 @@ const ModulePage = ({ title, type }) => {
                             <div style={{ marginBottom: '32px' }}>
                                 <h5 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '16px', color: 'var(--text-primary)' }}>Work Information</h5>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div style={{ padding: '16px', backgroundColor: 'var(--background)', borderRadius: '12px' }}>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Job Title</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>{selectedEmployee.job_title || 'N/A'}</p>
+                                    </div>
+                                    <div style={{ padding: '16px', backgroundColor: 'var(--background)', borderRadius: '12px' }}>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Employment Type</p>
+                                        <p style={{ fontSize: '1.1rem', fontWeight: 600, textTransform: 'capitalize' }}>
+                                            {selectedEmployee.employment_type ? selectedEmployee.employment_type.replace('_', ' ') : 'N/A'}
+                                        </p>
+                                    </div>
                                     <div style={{ padding: '16px', backgroundColor: 'var(--background)', borderRadius: '12px' }}>
                                         <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>Department</p>
                                         <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>{selectedEmployee.department_display || 'N/A'}</p>
@@ -2110,6 +2127,8 @@ const ModulePage = ({ title, type }) => {
                                     full_name, 
                                     email, 
                                     role, 
+                                    job_title,
+                                    employment_type,
                                     team_id, 
                                     department,
                                     created_at,
@@ -2152,6 +2171,8 @@ const ModulePage = ({ title, type }) => {
                                         name: emp.full_name || 'N/A',
                                         email: emp.email || 'N/A',
                                         role: emp.role || 'N/A',
+                                        job_title: emp.job_title,
+                                        employment_type: emp.employment_type || 'Full-Time',
                                         team_id: emp.team_id,
                                         dept: (Array.isArray(projectMap[emp.id]) && projectMap[emp.id].length > 0) ? (<>{projectMap[emp.id].map((pn, i) => <div key={i}>{pn}</div>)}</>) : (emp.teams?.team_name || 'Unassigned'),
                                         department_display: departmentNameDisplay,
