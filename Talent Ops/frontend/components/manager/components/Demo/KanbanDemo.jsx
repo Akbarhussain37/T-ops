@@ -78,7 +78,7 @@ const KanbanDemo = () => {
             if (profilesError) throw profilesError;
 
             const userMap = {};
-            const teamMap = {}; // Map user ID to Team ID if needed, or just use profiles
+            const teamMap = {}; // Map user ID to Team ID (which is actually project ID)
 
             if (profiles) {
                 profiles.forEach(p => {
@@ -87,12 +87,12 @@ const KanbanDemo = () => {
                 });
             }
 
-            // Fetch team names
-            const { data: teamsData } = await supabase.from('teams').select('id, team_name');
-            const teamNameMap = {};
-            if (teamsData) {
-                teamsData.forEach(t => {
-                    teamNameMap[t.id] = t.team_name;
+            // Fetch project names (using projects table instead of teams)
+            const { data: projectsData } = await supabase.from('projects').select('id, name');
+            const projectNameMap = {};
+            if (projectsData) {
+                projectsData.forEach(p => {
+                    projectNameMap[p.id] = p.name;
                 });
             }
 
@@ -101,7 +101,7 @@ const KanbanDemo = () => {
                     ...t,
                     assignee_name: userMap[t.assigned_to] || 'Unassigned',
                     assigner_name: userMap[t.assigned_by] || 'Unknown',
-                    team_name: t.team_id ? teamNameMap[t.team_id] : (teamNameMap[teamMap[t.assigned_to]] || 'N/A')
+                    team_name: t.team_id ? projectNameMap[t.team_id] : (projectNameMap[teamMap[t.assigned_to]] || 'N/A')
                 }));
                 setTasks(formatted);
             }
@@ -118,11 +118,11 @@ const KanbanDemo = () => {
 
     const fetchTeams = async () => {
         try {
-            const { data, error } = await supabase.from('teams').select('id, team_name');
+            const { data, error } = await supabase.from('projects').select('id, name');  // Changed from teams to projects
             if (error) throw error;
-            if (data) setTeamsList(data.map(t => ({ id: t.id, name: t.team_name })));
+            if (data) setTeamsList(data.map(p => ({ id: p.id, name: p.name })));  // Changed t to p, team_name to name
         } catch (error) {
-            console.error('Error fetching teams:', JSON.stringify(error, null, 2));
+            console.error('Error fetching projects:', JSON.stringify(error, null, 2));
         }
     };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal, Plus, X, User, Users, Filter, Search, Calendar, CheckCircle2, Circle, Clock, AlertCircle, ChevronLeft, ChevronRight, Eye, Shield, FileText, ExternalLink, XCircle, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, Plus, X, User, Users, Filter, Search, Calendar, CheckCircle2, Circle, Clock, AlertCircle, ChevronLeft, ChevronRight, Eye, Shield, FileText, ExternalLink, XCircle, AlertTriangle, Trash2, Edit2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useUser } from '../../context/UserContext';
 import { supabase } from '../../../../lib/supabaseClient';
@@ -51,6 +51,10 @@ const ManagerTasks = () => {
     const [taskWithIssue, setTaskWithIssue] = useState(null);
     const [resolvingIssue, setResolvingIssue] = useState(false);
     const [isRejecting, setIsRejecting] = useState(false);
+
+    // Edit Task State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
 
     useEffect(() => {
         if (showTaskDetailsModal && selectedTask) {
@@ -241,15 +245,15 @@ const ManagerTasks = () => {
     const fetchTeamDetails = async () => {
         if (!teamId) return;
         const { data, error } = await supabase
-            .from('teams')
-            .select('team_name')
+            .from('projects')  // Changed from 'teams' to 'projects'
+            .select('name')     // Changed from 'team_name' to 'name'
             .eq('id', teamId)
             .single();
 
         if (error) {
-            console.error('Error fetching team details:', error);
+            console.error('Error fetching project details:', error);
         } else if (data) {
-            setMyTeamName(data.team_name);
+            setMyTeamName(data.name);  // Project name is used as "team" name
         }
     };
 
@@ -444,6 +448,74 @@ const ManagerTasks = () => {
         } catch (error) {
             console.error(`Error updating task ${field}:`, error);
             addToast(`Failed to update task ${field}`, 'error');
+        }
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', taskId);
+
+            if (error) throw error;
+
+            // Remove from local state
+            setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+
+            addToast('Task deleted successfully', 'success');
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            addToast('Failed to delete task', 'error');
+        }
+    };
+
+    const handleEditTask = (task) => {
+        setEditingTask({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            assigned_to: task.assigned_to,
+            due_date: task.due_date,
+            priority: task.priority,
+            allocated_hours: task.allocated_hours || 0
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingTask.title) {
+            addToast('Please enter a task title', 'error');
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .update({
+                    title: editingTask.title,
+                    description: editingTask.description,
+                    assigned_to: editingTask.assigned_to,
+                    due_date: editingTask.due_date,
+                    priority: editingTask.priority.toLowerCase(),
+                    allocated_hours: parseFloat(editingTask.allocated_hours)
+                })
+                .eq('id', editingTask.id);
+
+            if (error) throw error;
+
+            // Update local state
+            setTasks(prevTasks => prevTasks.map(t =>
+                t.id === editingTask.id ? { ...t, ...editingTask } : t
+            ));
+
+            addToast('Task updated successfully', 'success');
+            setShowEditModal(false);
+            setEditingTask(null);
+            fetchTasks(); // Refresh to get updated data
+        } catch (error) {
+            console.error('Error updating task:', error);
+            addToast('Failed to update task', 'error');
         }
     };
 
@@ -651,6 +723,73 @@ const ManagerTasks = () => {
                                                     <Eye size={14} />
                                                     View
                                                 </button>
+
+                                                {/* Edit Button */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditTask(task);
+                                                    }}
+                                                    style={{
+                                                        padding: '6px 12px',
+                                                        borderRadius: '6px',
+                                                        border: '1px solid var(--border)',
+                                                        backgroundColor: 'var(--background)',
+                                                        color: 'var(--text-primary)',
+                                                        cursor: 'pointer',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 500,
+                                                        transition: 'all 0.2s',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                        e.currentTarget.style.color = 'white';
+                                                        e.currentTarget.style.borderColor = '#3b82f6';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'var(--background)';
+                                                        e.currentTarget.style.color = 'var(--text-primary)';
+                                                        e.currentTarget.style.borderColor = 'var(--border)';
+                                                    }}
+                                                >
+                                                    <Edit2 size={14} />
+                                                    Edit
+                                                </button>
+
+                                                {/* Delete Button */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm(`Are you sure you want to delete task "${task.title}"?`)) {
+                                                            handleDeleteTask(task.id);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        padding: '6px 12px',
+                                                        borderRadius: '6px',
+                                                        border: 'none',
+                                                        backgroundColor: '#ef4444',
+                                                        color: 'white',
+                                                        cursor: 'pointer',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 500,
+                                                        transition: 'all 0.2s',
+                                                        whiteSpace: 'nowrap'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Delete
+                                                </button>
+
                                                 {task.issues && !task.issues.includes('RESOLVED') && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openIssueModal(task); }}
@@ -1311,6 +1450,107 @@ const ManagerTasks = () => {
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                             <button onClick={() => setShowJustificationModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white' }}>Cancel</button>
                             <button onClick={handleApproveTask} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#b45309', color: 'white', fontWeight: 600 }}>Confirm & Approve</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Task Modal */}
+            {showEditModal && editingTask && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{ backgroundColor: 'var(--surface)', padding: 'var(--spacing-xl)', borderRadius: '16px', width: '500px', maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Edit Task</h3>
+                            <button onClick={() => { setShowEditModal(false); setEditingTask(null); }} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Task Title *</label>
+                                <input
+                                    type="text"
+                                    value={editingTask.title}
+                                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                                    placeholder="Enter task title"
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem' }}
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Description</label>
+                                <textarea
+                                    value={editingTask.description}
+                                    onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                                    placeholder="Enter task description"
+                                    rows="3"
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem', resize: 'vertical' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Allocated Hours *</label>
+                                <input
+                                    type="number"
+                                    min="0.5"
+                                    step="0.5"
+                                    value={editingTask.allocated_hours}
+                                    onChange={(e) => setEditingTask({ ...editingTask, allocated_hours: e.target.value })}
+                                    placeholder="e.g. 8.0"
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Assigned To *</label>
+                                <select
+                                    value={editingTask.assigned_to}
+                                    onChange={(e) => setEditingTask({ ...editingTask, assigned_to: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem' }}
+                                >
+                                    <option value="">Select Employee</option>
+                                    {employeesList.map(emp => (
+                                        <option key={emp.id} value={emp.id}>
+                                            {emp.full_name} ({emp.role})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Due Date</label>
+                                <input
+                                    type="date"
+                                    value={editingTask.due_date}
+                                    onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 500 }}>Priority</label>
+                                <select
+                                    value={editingTask.priority}
+                                    onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem' }}
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                <button
+                                    onClick={() => { setShowEditModal(false); setEditingTask(null); }}
+                                    style={{ flex: 1, padding: '12px', borderRadius: '8px', fontWeight: 600, border: '1px solid var(--border)', backgroundColor: 'var(--background)', cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    style={{ flex: 1, backgroundColor: 'var(--primary)', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: 'var(--shadow-md)' }}
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

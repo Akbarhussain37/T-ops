@@ -11,7 +11,7 @@ const Layout = ({ children }) => {
     React.useEffect(() => {
         const timer = setTimeout(() => {
             setIsCollapsed(true);
-        }, 5000);
+        }, 10000);
         return () => clearTimeout(timer);
     }, [location.pathname]);
 

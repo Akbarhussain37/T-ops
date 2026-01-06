@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Calendar, ChevronDown, X, Clock, ExternalLink, ThumbsUp, ThumbsDown, AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Plus, Eye, Calendar, ChevronDown, X, Clock, ExternalLink, ThumbsUp, ThumbsDown, AlertTriangle, CheckCircle2, AlertCircle, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { supabaseRequest } from '../../lib/supabaseRequest';
 import { useProject } from '../employee/context/ProjectContext';
@@ -21,6 +21,10 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
     const [taskWithIssue, setTaskWithIssue] = useState(null);
     const [resolvingIssue, setResolvingIssue] = useState(false);
     const [allocatedHoursError, setAllocatedHoursError] = useState('');
+
+    // Edit Task State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
 
     const handleAllocatedHoursChange = (e) => {
         const value = e.target.value;
@@ -99,6 +103,78 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
         } catch (error) {
             console.error('Error updating task:', error);
             addToast?.('Failed to update task', 'error');
+        }
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', taskId);
+
+            if (error) throw error;
+
+            // Remove from local state
+            setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
+
+            addToast?.('Task deleted successfully', 'success');
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            addToast?.('Failed to delete task', 'error');
+        }
+    };
+
+    const handleEditTask = (task) => {
+        setEditingTask({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            assigned_to: task.assigned_to,
+            due_date: task.due_date,
+            priority: task.priority,
+            status: task.status,
+            allocated_hours: task.allocated_hours || 0
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingTask.title) {
+            addToast?.('Please enter a task title', 'error');
+            return;
+        }
+
+        try {
+            // Convert status to database format
+            let statusValue = editingTask.status.toLowerCase();
+            // If status has spaces, replace with underscores
+            if (statusValue.includes(' ')) {
+                statusValue = statusValue.replace(/ /g, '_');
+            }
+
+            const { error } = await supabase
+                .from('tasks')
+                .update({
+                    title: editingTask.title,
+                    description: editingTask.description,
+                    assigned_to: editingTask.assigned_to,
+                    due_date: editingTask.due_date,
+                    priority: editingTask.priority.toLowerCase(),
+                    status: statusValue,
+                    allocated_hours: parseFloat(editingTask.allocated_hours)
+                })
+                .eq('id', editingTask.id);
+
+            if (error) throw error;
+
+            addToast?.('Task updated successfully', 'success');
+            setShowEditModal(false);
+            setEditingTask(null);
+            fetchData(); // Refresh to get updated data
+        } catch (error) {
+            console.error('Error updating task:', error);
+            addToast?.('Failed to update task: ' + (error.message || 'Unknown error'), 'error');
         }
     };
 
@@ -531,47 +607,48 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
                             : 'Track your tasks through the lifecycle'}
                     </p>
                 </div>
-                <button
-                    onClick={downloadCSV}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '12px 24px',
-                        backgroundColor: 'white',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        color: '#475569',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontSize: '0.95rem',
-                        marginRight: '12px'
-                    }}
-                >
-                    <ExternalLink size={18} /> Export CSV
-                </button>
-                {(userRole === 'manager' || userRole === 'executive') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end' }}>
+                    {(userRole === 'manager' || userRole === 'executive') && (
+                        <button
+                            onClick={() => setShowAddTaskModal(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 16px',
+                                backgroundColor: '#0f172a',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            <Plus size={16} />
+                            New Task
+                        </button>
+                    )}
                     <button
-                        onClick={() => setShowAddTaskModal(true)}
+                        onClick={downloadCSV}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 24px',
-                            backgroundColor: '#0f172a',
-                            color: 'white',
-                            border: 'none',
+                            gap: '6px',
+                            padding: '8px 16px',
+                            backgroundColor: 'white',
+                            border: '1px solid #cbd5e1',
                             borderRadius: '8px',
+                            color: '#475569',
                             fontWeight: 600,
                             cursor: 'pointer',
-                            fontSize: '0.95rem',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            fontSize: '0.875rem'
                         }}
                     >
-                        <Plus size={18} />
-                        New Task
+                        <ExternalLink size={16} /> Export CSV
                     </button>
-                )}
+                </div>
             </div>
 
             {/* Filters */}
@@ -758,53 +835,84 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
                                             </td>
 
                                             <td style={{ padding: '16px', verticalAlign: 'middle', textAlign: 'center' }}>
-                                                <button
-                                                    onClick={() => setSelectedTask(task)}
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        padding: '8px 12px',
-                                                        backgroundColor: '#f1f5f9',
-                                                        color: '#0f172a',
-                                                        border: 'none',
-                                                        borderRadius: '6px',
-                                                        fontSize: '0.85rem',
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer',
-                                                        whiteSpace: 'nowrap'
-                                                    }}
-                                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e2e8f0'}
-                                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-                                                >
-                                                    <Eye size={14} />
-                                                    View
-                                                </button>
-                                                {(userRole === 'manager' || userRole === 'team_lead') && task.issues && !task.issues.includes('RESOLVED') && (
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
                                                     <button
-                                                        onClick={() => openIssueModal(task)}
+                                                        onClick={() => setSelectedTask(task)}
                                                         style={{
                                                             display: 'inline-flex',
                                                             alignItems: 'center',
                                                             gap: '6px',
                                                             padding: '8px 12px',
-                                                            backgroundColor: '#f59e0b',
-                                                            color: 'white',
+                                                            backgroundColor: '#f1f5f9',
+                                                            color: '#0f172a',
                                                             border: 'none',
                                                             borderRadius: '6px',
                                                             fontSize: '0.85rem',
                                                             fontWeight: 600,
                                                             cursor: 'pointer',
-                                                            marginLeft: '8px',
                                                             whiteSpace: 'nowrap'
                                                         }}
-                                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#d97706'}
-                                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f59e0b'}
+                                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
                                                     >
-                                                        <AlertTriangle size={14} />
-                                                        Resolve
+                                                        <Eye size={14} />
+                                                        View
                                                     </button>
-                                                )}
+
+                                                    {/* Edit Button - Only for managers/team leads */}
+                                                    {(userRole === 'manager' || userRole === 'team_lead') && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditTask(task);
+                                                            }}
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: '6px',
+                                                                padding: '8px 12px',
+                                                                backgroundColor: '#3b82f6',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                whiteSpace: 'nowrap'
+                                                            }}
+                                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#2563eb'}
+                                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                                                        >
+                                                            <Edit2 size={14} />
+                                                            Edit
+                                                        </button>
+                                                    )}
+
+                                                    {(userRole === 'manager' || userRole === 'team_lead') && task.issues && !task.issues.includes('RESOLVED') && (
+                                                        <button
+                                                            onClick={() => openIssueModal(task)}
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: '6px',
+                                                                padding: '8px 12px',
+                                                                backgroundColor: '#f59e0b',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                whiteSpace: 'nowrap'
+                                                            }}
+                                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#d97706'}
+                                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f59e0b'}
+                                                        >
+                                                            <AlertTriangle size={14} />
+                                                            Resolve
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -1536,6 +1644,133 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
                                 <CheckCircle2 size={16} />
                                 {resolvingIssue ? 'Resolving...' : 'Mark as Resolved'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Task Modal */}
+            {showEditModal && editingTask && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '500px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Edit Task</h3>
+                            <button onClick={() => { setShowEditModal(false); setEditingTask(null); }} style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Task Title *</label>
+                                <input
+                                    type="text"
+                                    value={editingTask.title}
+                                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                                    placeholder="Enter task title"
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Description</label>
+                                <textarea
+                                    value={editingTask.description}
+                                    onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                                    placeholder="Enter task description"
+                                    rows="3"
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem', resize: 'vertical' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Allocated Hours *</label>
+                                <input
+                                    type="number"
+                                    min="0.5"
+                                    step="0.5"
+                                    value={editingTask.allocated_hours}
+                                    onChange={(e) => setEditingTask({ ...editingTask, allocated_hours: e.target.value })}
+                                    placeholder="e.g. 8.0"
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Assigned To *</label>
+                                <select
+                                    value={editingTask.assigned_to}
+                                    onChange={(e) => setEditingTask({ ...editingTask, assigned_to: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem', backgroundColor: 'white' }}
+                                >
+                                    <option value="">Select Employee</option>
+                                    {employees.map(emp => (
+                                        <option key={emp.id} value={emp.id}>
+                                            {emp.full_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Due Date</label>
+                                <input
+                                    type="date"
+                                    value={editingTask.due_date}
+                                    onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Priority</label>
+                                <select
+                                    value={editingTask.priority}
+                                    onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem', backgroundColor: 'white' }}
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Status</label>
+                                <select
+                                    value={editingTask.status}
+                                    onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem', backgroundColor: 'white' }}
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="in progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="on hold">On Hold</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                                <button
+                                    onClick={() => { setShowEditModal(false); setEditingTask(null); }}
+                                    style={{ flex: 1, padding: '12px', borderRadius: '8px', fontWeight: 600, border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', color: '#64748b' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm(`Are you sure you want to delete task "${editingTask.title}"?`)) {
+                                            handleDeleteTask(editingTask.id);
+                                            setShowEditModal(false);
+                                            setEditingTask(null);
+                                        }
+                                    }}
+                                    style={{ flex: 1, backgroundColor: '#ef4444', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                                >
+                                    <Trash2 size={16} />
+                                    Delete
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    style={{ flex: 1, backgroundColor: '#0f172a', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

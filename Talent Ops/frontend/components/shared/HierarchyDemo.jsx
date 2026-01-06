@@ -23,18 +23,53 @@ const HierarchyDemo = () => {
 
     const fetchHierarchy = async () => {
         try {
+            // Fetch all profiles
             const { data: profiles } = await supabase
                 .from('profiles')
                 .select('*')
                 .order('full_name');
 
+            // Fetch project members to identify project-specific roles
+            const { data: projectMembers } = await supabase
+                .from('project_members')
+                .select('user_id, role, project_id');
+
             if (profiles) {
                 const getRole = (p) => p.role ? p.role.toLowerCase().trim() : '';
 
+                // Create a map of users who have project-specific roles
+                const projectRoleMap = {};
+                if (projectMembers) {
+                    projectMembers.forEach(pm => {
+                        if (!projectRoleMap[pm.user_id]) {
+                            projectRoleMap[pm.user_id] = [];
+                        }
+                        projectRoleMap[pm.user_id].push({
+                            role: pm.role,
+                            project_id: pm.project_id
+                        });
+                    });
+                }
+
+                // Filter based on ORGANIZATIONAL role only
+                // Exclude users whose organizational role is 'employee' but who are assigned as 'manager' in projects
                 const executives = profiles.filter(p => getRole(p) === 'executive');
-                const managers = profiles.filter(p => getRole(p) === 'manager');
+
+                // For managers: only show those whose PRIMARY organizational role is 'manager'
+                // NOT those who are project managers (employee role + manager in project_members)
+                const managers = profiles.filter(p => {
+                    const orgRole = getRole(p);
+                    return orgRole === 'manager';
+                });
+
                 const teamLeads = profiles.filter(p => getRole(p) === 'team_lead');
-                const employees = profiles.filter(p => getRole(p) === 'employee');
+
+                // For employees: show those with employee role who are NOT acting as managers in projects
+                // OR show all employees (depending on your preference)
+                const employees = profiles.filter(p => {
+                    const orgRole = getRole(p);
+                    return orgRole === 'employee';
+                });
 
                 setHierarchyData({
                     executives,

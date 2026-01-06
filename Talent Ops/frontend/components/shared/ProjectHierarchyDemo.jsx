@@ -148,15 +148,8 @@ const ProjectHierarchyDemo = ({ isEditingEnabled = false }) => {
     const handleAddMember = async (userId, role) => {
         if (!selectedProject) return;
         try {
-            // Update user role in profiles
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({ role: role })
-                .eq('id', userId);
-
-            if (profileError) throw profileError;
-
-            // Add to project_members table
+            // ONLY add to project_members table with project-specific role
+            // Do NOT update the organizational role in profiles table
             const { error: teamMemberError } = await supabase
                 .from('project_members')
                 .insert({
@@ -166,6 +159,18 @@ const ProjectHierarchyDemo = ({ isEditingEnabled = false }) => {
                 });
 
             if (teamMemberError) throw teamMemberError;
+
+            // NEW: Set team_id in profiles to project_id for manager dashboard compatibility
+            // This allows the manager dashboard to work with projects as "teams"
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({ team_id: selectedProject.id })
+                .eq('id', userId);
+
+            if (profileError) {
+                console.error('Error updating team_id:', profileError);
+                // Don't throw - project member was added successfully
+            }
 
             fetchHierarchy();
             setShowAddMemberModal(false);

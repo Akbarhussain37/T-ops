@@ -98,7 +98,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
         try {
             const { data: profile, error } = await supabase
                 .from('profiles')
-                .select('department, join_date, job_title, employment_type')
+                .select('department, join_date, job_title, employment_type, monthly_leave_quota')
                 .eq('id', employee.id)
                 .single();
 
@@ -108,7 +108,8 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({ isOpen, on
                     department_id: profile.department || '',
                     job_title: profile.job_title || '',
                     employment_type: profile.employment_type || 'full_time',
-                    joinDate: profile.join_date || ''
+                    joinDate: profile.join_date || '',
+                    monthly_leave_quota: profile.monthly_leave_quota || 3
                 }));
             }
         } catch (err) {

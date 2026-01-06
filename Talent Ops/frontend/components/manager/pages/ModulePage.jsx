@@ -73,11 +73,7 @@ const ModulePage = ({ title, type }) => {
                             full_name, 
                             email, 
                             role, 
-                            team_id, 
-                            created_at,
-                            teams!team_id (
-                                team_name
-                            )
+                            created_at
                         `);
 
                     if (profileError) throw profileError;
@@ -100,7 +96,7 @@ const ModulePage = ({ title, type }) => {
                             name: emp.full_name || 'N/A',
                             email: emp.email || 'N/A',
                             role: emp.role || 'N/A',
-                            dept: projectMap[emp.id] || emp.teams?.team_name || 'Unassigned',
+                            dept: projectMap[emp.id] || 'Unassigned',
                             status: 'Active',
                             joinDate: emp.created_at ? new Date(emp.created_at).toLocaleDateString() : 'N/A'
                         })));
