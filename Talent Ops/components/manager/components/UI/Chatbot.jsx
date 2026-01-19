@@ -3,7 +3,7 @@ import { Send, Bot, User, MessageSquare, X, Move, Loader } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabaseClient';
 
-const CHATBOT_API_URL = 'http://localhost:8000/api/chatbot/query';
+const CHATBOT_API_URL = '/api/chatbot/query';
 const SMART_BUTTONS_URL = 'http://localhost:8000/api/chatbot/context-buttons';
 
 const Chatbot = () => {
@@ -74,17 +74,17 @@ const Chatbot = () => {
         setIsLoading(true);
 
         try {
-            // Check if AI Gateway is running
-            const healthCheck = await fetch('http://localhost:8000/health').catch(() => null);
+            // Check if AI Gateway is running - Simplified or skipped if using direct URL
+            // const healthCheck = await fetch('http://localhost:8000/health').catch(() => null);
 
-            if (!healthCheck || !healthCheck.ok) {
-                setMessages(prev => [...prev, {
-                    role: 'ai',
-                    text: '⚠️ AI Gateway is not running.\n\nTo start:\n1. Open terminal in modalgateway/ai-gateway\n2. Run: python main.py\n3. Wait for "AI Gateway ready!"'
-                }]);
-                setIsLoading(false);
-                return;
-            }
+            // if (!healthCheck || !healthCheck.ok) {
+            //     setMessages(prev => [...prev, {
+            //         role: 'ai',
+            //         text: '⚠️ AI Gateway is not running.\n\nTo start:\n1. Open terminal in modalgateway/ai-gateway\n2. Run: python main.py\n3. Wait for "AI Gateway ready!"'
+            //     }]);
+            //     setIsLoading(false);
+            //     return;
+            // }
 
             // Parse @document tags from query
             let taggedDoc = null;
@@ -104,6 +104,10 @@ const Chatbot = () => {
                 }]);
             }
 
+            // Extract Project ID from URL if present
+            const projectMatch = location.pathname.match(/\/projects\/([a-zA-Z0-9-]+)/);
+            const projectId = projectMatch ? projectMatch[1] : null;
+
             // Send query to AI Gateway with RAG
             const response = await fetch(CHATBOT_API_URL, {
                 method: 'POST',
@@ -112,11 +116,16 @@ const Chatbot = () => {
                 },
                 body: JSON.stringify({
                     query: cleanQuery || userMessage,
+                    user_id: userProfile?.id,
+                    org_id: userProfile?.org_id,
+                    project_id: projectId,
                     context: {
                         route: location.pathname,
                         module: location.pathname.split('/').pop() || 'dashboard',
-                        role: userProfile?.role || 'executive',
-                        user_id: userProfile?.id || 'guest'
+                        role: userProfile?.role || 'manager',
+                        user_id: userProfile?.id || 'guest',
+                        org_id: userProfile?.org_id,
+                        project_id: projectId
                     },
                     tagged_doc: taggedDoc ? { document_id: taggedDoc } : null
                 })
@@ -125,8 +134,10 @@ const Chatbot = () => {
             const data = await response.json();
 
             // Handle RAG response
-            if (data.answer) {
-                let messageText = data.answer;
+            // Handle RAG response
+            const responseText = data.answer || data.response;
+            if (responseText) {
+                let messageText = responseText;
 
                 // Add confidence indicator
                 if (data.confidence) {
@@ -158,7 +169,7 @@ const Chatbot = () => {
             console.error('Chatbot error:', error);
             setMessages(prev => [...prev, {
                 role: 'ai',
-                text: `❌ Error: ${error.message}\n\nMake sure the AI Gateway is running on http://localhost:8000`
+                text: `❌ Error: ${error.message}\n\nMake sure the AI Gateway is running on ${CHATBOT_API_URL}`
             }]);
         } finally {
             setIsLoading(false);
@@ -426,14 +437,11 @@ const Chatbot = () => {
                 </div>
             )}
 
-            {/* Toggle Button (FAB) - Chat Disabled but Draggable */}
+            {/* Toggle Button (FAB) - Chat Enabled */}
             <button
                 className="chatbot-fab"
                 onMouseDown={handleMouseDown}
-                onClick={(e) => {
-                    // Prevent opening chat, but allow dragging
-                    e.preventDefault();
-                }}
+                onClick={() => !isDragging && setIsOpen(!isOpen)}
                 style={{
                     width: '64px',
                     height: '64px',
@@ -445,7 +453,7 @@ const Chatbot = () => {
                     justifyContent: 'center',
                     boxShadow: 'var(--shadow-lg)',
                     transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease',
-                    cursor: isDragging ? 'grabbing' : 'not-allowed',
+                    cursor: isDragging ? 'grabbing' : 'pointer',
                     border: 'none',
                     userSelect: 'none'
                 }}
@@ -461,9 +469,9 @@ const Chatbot = () => {
                         e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
                     }
                 }}
-                title="AI Chatbot is currently unavailable"
+                title="AI Chatbot"
             >
-                <MessageSquare size={28} />
+                {isOpen ? <X size={28} /> : <MessageSquare size={28} />}
             </button>
 
             <style>

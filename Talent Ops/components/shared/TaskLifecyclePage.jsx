@@ -21,6 +21,7 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, orgId, addToast, pro
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
     const [selectedTask, setSelectedTask] = useState(null);
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [taskHistory, setTaskHistory] = useState([]);
@@ -278,8 +279,13 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, orgId, addToast, pro
         const matchesStatus = filterStatus === 'All' ||
             (filterStatus === 'In Progress' && task.sub_state === 'in_progress') ||
             (filterStatus === 'Pending' && task.sub_state === 'pending_validation');
+
         const matchesSearch = task.title?.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesStatus && matchesSearch;
+
+        // Date filter: check if task's due_date matches the selected date
+        const matchesDate = !dateFilter || (task.due_date && task.due_date === dateFilter);
+
+        return matchesStatus && matchesSearch && matchesDate;
     });
 
     const LifecycleProgress = ({ currentPhase, subState, taskStatus }) => {
@@ -385,13 +391,80 @@ const TaskLifecyclePage = ({ userRole = 'employee', userId, orgId, addToast, pro
             </div>
 
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: 'var(--surface)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                <div style={{ position: 'relative', minWidth: '200px' }}>
+                <div style={{ position: 'relative', minWidth: '200px', flex: 1 }}>
                     <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input type="text" placeholder="Search tasks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                         style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', fontSize: '0.9rem' }} />
                 </div>
+
+                {/* Date Filter Components */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border)',
+                                outline: 'none',
+                                backgroundColor: 'var(--background)',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                height: '38px',
+                                fontFamily: 'inherit'
+                            }}
+                        />
+                    </div>
+
+                    <button
+                        onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border)',
+                            backgroundColor: 'var(--background)',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            height: '38px',
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap'
+                        }}
+                        title="Show Today's Tasks"
+                    >
+                        <Calendar size={16} />
+                        Today
+                    </button>
+
+                    {dateFilter && (
+                        <button
+                            onClick={() => setDateFilter('')}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #fee2e2',
+                                backgroundColor: '#fef2f2',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                height: '38px',
+                                fontWeight: 500
+                            }}
+                        >
+                            <X size={16} />
+                            Clear
+                        </button>
+                    )}
+                </div>
+
+                <div style={{ height: '24px', width: '1px', backgroundColor: 'var(--border)', margin: '0 4px' }}></div>
+
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', cursor: 'pointer', backgroundColor: 'var(--background)' }}>
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none', cursor: 'pointer', backgroundColor: 'var(--background)', height: '38px' }}>
                     <option value="All">All</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Pending">Pending Validation</option>

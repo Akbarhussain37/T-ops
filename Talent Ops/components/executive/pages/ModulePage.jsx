@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, X, Eye, Mail, Phone, MapPin, Calendar, Briefcase, Download, Edit, Users, Clock, Activity, Target, TrendingUp, ChevronRight, LayoutGrid, List, Search, Map as MapIcon, CheckCircle } from 'lucide-react';
 import DataTable from '../components/UI/DataTable';
 import { useToast } from '../context/ToastContext';
@@ -24,6 +25,7 @@ import ProjectAnalytics from '../../shared/ProjectAnalytics/ProjectAnalytics';
 
 
 const ModulePage = ({ title, type }) => {
+    const navigate = useNavigate();
     const { addToast } = useToast();
     const { userId, orgId, userRole } = useUser();
     const [searchTerm, setSearchTerm] = useState('');
@@ -1532,6 +1534,40 @@ const ModulePage = ({ title, type }) => {
                             {type === 'workforce' ? 'Add Employee' : type === 'recruitment' ? 'Add Candidate' : 'Add Policy'}
                         </button>
                     )}
+
+                    {/* Employee Lifecycle Button on Workforce Page */}
+                    {type === 'workforce' && (
+                        <button
+                            onClick={() => navigate('/executive-dashboard/lifecycle')}
+                            style={{
+                                background: 'white',
+                                color: 'var(--primary)',
+                                padding: '18px 36px',
+                                borderRadius: '24px',
+                                fontWeight: '800',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                fontSize: '1.1rem',
+                                letterSpacing: '-0.02em'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                                e.currentTarget.style.boxShadow = '0 20px 30px -5px rgba(0,0,0,0.15)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                                e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.1)';
+                            }}
+                        >
+                            <TrendingUp size={24} strokeWidth={3} />
+                            Manage Lifecycle
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -1550,10 +1586,10 @@ const ModulePage = ({ title, type }) => {
                         { label: 'Peak Engagement', value: '92%', icon: <Activity size={20} />, color: '#818cf8', bg: 'rgba(129, 140, 248, 0.1)' }
                     ].map((stat, i) => (
                         <div key={i} style={{
-                            backgroundColor: '#ffffff',
+                            backgroundColor: 'var(--card-bg)',
                             borderRadius: '24px',
                             padding: '24px',
-                            border: '1px solid #f1f5f9',
+                            border: '1px solid var(--card-border)',
                             boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
                             display: 'flex',
                             alignItems: 'center',
@@ -1572,8 +1608,8 @@ const ModulePage = ({ title, type }) => {
                                 {stat.icon}
                             </div>
                             <div>
-                                <p style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.02em' }}>{stat.label}</p>
-                                <p style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a' }}>{stat.value}</p>
+                                <p style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--card-subtext)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.02em' }}>{stat.label}</p>
+                                <p style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--card-text)' }}>{stat.value}</p>
                             </div>
                         </div>
                     ))}

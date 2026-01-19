@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 0,
       host: '0.0.0.0',
+      proxy: {
+        '/api/chatbot': {
+          target: process.env.VITE_CHATBOT_URL || 'http://localhost:8035',
+          changeOrigin: true,
+          secure: false,
+        }
+      }
     },
     plugins: [react()],
     define: {

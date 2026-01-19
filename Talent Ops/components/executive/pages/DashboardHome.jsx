@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Users, Clock, Calendar, ChevronRight, MoreHorizontal,
-    CheckCircle2, AlertCircle, Timer, Plus, Star, X
+    CheckCircle2, AlertCircle, Timer, Plus, Star, X, BarChart3, Info
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useUser } from '../context/UserContext';
 import { supabase } from '../../../lib/supabaseClient';
 import NotesTile from '../../shared/NotesTile';
+import EmployeeRecognitionBoard from '../../shared/EmployeeRecognitionBoard';
 
 
 const DashboardHome = () => {
@@ -62,16 +63,20 @@ const DashboardHome = () => {
     const [selectedTeams, setSelectedTeams] = useState([]);
     const [selectedEmployees, setSelectedEmployees] = useState([]);
 
+    const [workforceAnalytics, setWorkforceAnalytics] = useState([]);
+    const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
+
     // Fetch data from Supabase
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // Fetch employees for stats
+                // Fetch profiles
                 const { data: employees } = await supabase
                     .from('profiles')
                     .select('id, full_name, role, team_id');
 
-                // Fetch real attendance data
+                // Fetch real attendance data (Today)
                 const todayStr = new Date().toISOString().split('T')[0];
                 const { data: attendanceData } = await supabase
                     .from('attendance')
@@ -105,8 +110,61 @@ const DashboardHome = () => {
                     });
                 }
 
-                // Fetch teams for analytics
-                // Fetch tasks for stats and analytics
+                // Fetch data for Workforce Analytics (All Time or Last 30 Days - keeping it simple for now)
+                // 1. All Tasks
+                const { data: allTasks } = await supabase
+                    .from('tasks')
+                    .select('id, project_id, assigned_to, status');
+
+                // 2. All Attendance (To calculate total hours)
+                const { data: allAttendance } = await supabase
+                    .from('attendance')
+                    .select('employee_id, total_hours');
+
+                // 3. All Projects
+                const { data: projectsData } = await supabase
+                    .from('projects')
+                    .select('id, name');
+
+                const projectsMap = {};
+                if (projectsData) projectsData.forEach(p => projectsMap[p.id] = p.name);
+
+                if (employees && allTasks && allAttendance && projectsData) {
+                    const analyticsData = employees.map(emp => {
+                        // Total Hours
+                        const empAttendance = allAttendance.filter(a => a.employee_id === emp.id);
+                        const totalHours = empAttendance.reduce((acc, curr) => acc + (parseFloat(curr.total_hours) || 0), 0);
+
+                        // Tasks
+                        const empTasks = allTasks.filter(t => t.assigned_to === emp.id);
+                        const totalEmpTasks = empTasks.length;
+
+                        // Project Distribution
+                        const dist = {};
+                        empTasks.forEach(task => {
+                            if (task.project_id && projectsMap[task.project_id]) {
+                                if (!dist[task.project_id]) dist[task.project_id] = { name: projectsMap[task.project_id], count: 0 };
+                                dist[task.project_id].count++;
+                            }
+                        });
+
+                        const projectBreakdown = Object.values(dist).map(p => ({
+                            name: p.name,
+                            hours: totalEmpTasks > 0 ? (totalHours * (p.count / totalEmpTasks)) : 0
+                        })).sort((a, b) => b.hours - a.hours);
+
+                        return {
+                            id: emp.id,
+                            name: emp.full_name,
+                            role: emp.role,
+                            totalHours: totalHours,
+                            breakdown: projectBreakdown
+                        };
+                    });
+                    setWorkforceAnalytics(analyticsData);
+                }
+
+
                 // Fetch tasks for stats and analytics AND timeline
                 const { data: tasks } = await supabase
                     .from('tasks')
@@ -179,9 +237,7 @@ const DashboardHome = () => {
                 setTimeline(combinedEvents);
 
                 // Fetch projects for analytics
-                const { data: projectsData } = await supabase
-                    .from('projects')
-                    .select('id, name');
+                // const { data: projectsData } = await supabase ... (Already fetched above)
 
                 const projects = projectsData ? projectsData.map(p => ({ id: p.id, name: p.name })) : [];
 
@@ -532,6 +588,11 @@ const DashboardHome = () => {
                         />
                     </div>
 
+                    {/* Employee Recognition Board */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <EmployeeRecognitionBoard />
+                    </div>
+
                     {/* Project Status Matrix */}
                     <div style={{
                         backgroundColor: '#ffffff',
@@ -545,12 +606,32 @@ const DashboardHome = () => {
                                 <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>Project Health Matrix</h3>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>Real-time performance across active projects</p>
                             </div>
-                            <button
-                                onClick={() => navigate('/executive-dashboard/analytics')}
-                                style={{ color: '#0ea5e9', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                                View full report <ChevronRight size={16} />
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button
+                                    onClick={() => setShowAnalyticsModal(true)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#eff6ff',
+                                        color: '#3b82f6',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '700',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    <BarChart3 size={16} /> Workforce Analytics
+                                </button>
+                                <button
+                                    onClick={() => navigate('/executive-dashboard/analytics')}
+                                    style={{ color: '#0ea5e9', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
+                                >
+                                    View full report <ChevronRight size={16} />
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -849,6 +930,132 @@ const DashboardHome = () => {
                 ::-webkit-scrollbar-thumb { background: #e2e8f0; borderRadius: 10px; }
                 ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
             `}</style>
+            {/* Workforce Analytics Modal */}
+            {showAnalyticsModal && (
+                <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '32px',
+                        width: '900px',
+                        maxWidth: '95vw',
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}>
+                        <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ padding: '10px', backgroundColor: '#e0f2fe', borderRadius: '12px' }}>
+                                    <Users size={24} color="#0284c7" />
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Workforce Analytics</h2>
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                console.log('Info clicked');
+                                                setShowInfo(!showInfo);
+                                            }}
+                                            style={{
+                                                cursor: 'pointer',
+                                                color: showInfo ? '#3b82f6' : '#94a3b8',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '8px',
+                                                borderRadius: '50%',
+                                                transition: 'all 0.2s',
+                                                backgroundColor: showInfo ? '#eff6ff' : 'transparent',
+                                                zIndex: 10
+                                            }}
+                                            onMouseEnter={(e) => !showInfo && (e.currentTarget.style.backgroundColor = '#f1f5f9')}
+                                            onMouseLeave={(e) => !showInfo && (e.currentTarget.style.backgroundColor = 'transparent')}
+                                        >
+                                            <Info size={20} />
+                                        </div>
+                                    </div>
+                                    <p style={{ color: '#64748b', margin: 0, fontWeight: 600 }}>Project distribution based on weighted task count</p>
+                                    {showInfo && (
+                                        <div style={{
+                                            marginTop: '12px',
+                                            padding: '12px 16px',
+                                            backgroundColor: '#f1f5f9',
+                                            borderRadius: '12px',
+                                            fontSize: '0.85rem',
+                                            color: '#334155',
+                                            border: '1px solid #e2e8f0',
+                                            maxWidth: '400px'
+                                        }}>
+                                            <p style={{ margin: '0 0 4px 0', fontWeight: 700, color: '#0f172a' }}>Calculation Formula:</p>
+                                            <p style={{ margin: 0, lineHeight: 1.5 }}>Estimated Hours = Total Attendance Hours × (Project Tasks / Total Assigned Tasks)</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowAnalyticsModal(false)}
+                                style={{ padding: '8px', borderRadius: '8px', border: '1px solid #f1f5f9', background: 'transparent', cursor: 'pointer' }}
+                            >
+                                <X size={20} color="#64748b" />
+                            </button>
+                        </div>        <div style={{ padding: '32px', overflowY: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                        <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Employee</th>
+                                        <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Role</th>
+                                        <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Project Breakdown (Weighted)</th>
+                                        <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Total Hours</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {workforceAnalytics.map((stat) => (
+                                        <tr key={stat.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                            <td style={{ padding: '16px' }}>
+                                                <div style={{ fontWeight: '700', color: '#0f172a' }}>{stat.name}</div>
+                                            </td>
+                                            <td style={{ padding: '16px' }}>
+                                                <span style={{
+                                                    padding: '4px 10px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600,
+                                                    backgroundColor: stat.role === 'Executive' ? '#fef3c7' : stat.role === 'Manager' ? '#e0e7ff' : '#f1f5f9',
+                                                    color: stat.role === 'Executive' ? '#d97706' : stat.role === 'Manager' ? '#4f46e5' : '#64748b',
+                                                    border: `1px solid ${stat.role === 'Executive' ? '#fcd34d' : stat.role === 'Manager' ? '#c7d2fe' : '#e2e8f0'}`
+                                                }}>
+                                                    {stat.role || 'Employee'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '16px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    {stat.breakdown.length > 0 ? (
+                                                        stat.breakdown.map((proj, idx) => (
+                                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                                                <span style={{ color: '#475569' }}>{proj.name}</span>
+                                                                <span style={{ fontWeight: '600', color: '#0f172a' }}>{Math.round(proj.hours)}h</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No active projects</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '16px', textAlign: 'right' }}>
+                                                <span style={{ fontSize: '1rem', fontWeight: '800', color: '#0f172a' }}>
+                                                    {Math.round(stat.totalHours)}h
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

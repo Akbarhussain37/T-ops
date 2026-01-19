@@ -191,8 +191,8 @@ const Sidebar = ({ isCollapsed, toggleSidebar, onMouseEnter, onMouseLeave }) => 
             onMouseLeave={onMouseLeave}
             style={{
                 width: isCollapsed ? '70px' : '240px',
-                backgroundColor: '#1a1a2e',
-                color: 'white',
+                backgroundColor: 'var(--sidebar-bg)',
+                color: 'var(--sidebar-text)',
                 height: '100vh',
                 position: 'fixed',
                 left: 0,
@@ -202,7 +202,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, onMouseEnter, onMouseLeave }) => 
                 padding: '12px',
                 zIndex: 1000,
                 transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                borderRadius: '0 24px 24px 0',
                 willChange: 'width',
                 transform: 'translateZ(0)'
             }}>

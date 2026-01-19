@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { NewLandingPage } from './components/pages/NewLandingPage';
 import { LoginPage } from './components/pages/LoginPage';
@@ -8,8 +8,8 @@ import { TeamLeadDashboard } from './components/pages/TeamLeadDashboard';
 import { EmployeeDashboard } from './components/pages/EmployeeDashboard';
 import { ForgotPasswordPage } from './components/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/pages/ResetPasswordPage';
-
-import { useEffect } from 'react';
+// @ts-ignore
+import { ThemeProvider } from './components/shared/context/ThemeContext';
 import { supabase } from './lib/supabaseClient';
 
 function App() {
@@ -51,18 +51,20 @@ function App() {
     }, []);
 
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<NewLandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/executive-dashboard/*" element={<ExecutiveDashboard />} />
-                <Route path="/manager-dashboard/*" element={<ManagerDashboard />} />
-                <Route path="/teamlead-dashboard/*" element={<TeamLeadDashboard />} />
-                <Route path="/employee-dashboard/*" element={<EmployeeDashboard />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-            </Routes>
-        </Router>
+        <ThemeProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<NewLandingPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/executive-dashboard/*" element={<ExecutiveDashboard />} />
+                    <Route path="/manager-dashboard/*" element={<ManagerDashboard />} />
+                    <Route path="/teamlead-dashboard/*" element={<TeamLeadDashboard />} />
+                    <Route path="/employee-dashboard/*" element={<EmployeeDashboard />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                </Routes>
+            </Router>
+        </ThemeProvider>
     );
 }
 

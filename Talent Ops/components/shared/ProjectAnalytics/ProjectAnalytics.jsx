@@ -11,7 +11,8 @@ import {
     Plus,
     Filter,
     Search,
-    X
+    X,
+    Clock
 } from 'lucide-react';
 
 // ================================
@@ -881,7 +882,8 @@ const ProjectAnalytics = ({ userRole = 'manager', dashboardPrefix = '/manager-da
                         {[
                             { id: 'financials', label: 'Financials', icon: DollarSign },
                             { id: 'team', label: 'Team & Resources', icon: Users },
-                            { id: 'timeline', label: 'Timeline', icon: Calendar }
+                            { id: 'timeline', label: 'Timeline', icon: Calendar },
+                            { id: 'time', label: 'Time & Effort', icon: Clock }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -935,6 +937,7 @@ const ProjectAnalytics = ({ userRole = 'manager', dashboardPrefix = '/manager-da
                                 {activeTab === 'financials' && <FinancialsTab financials={financials} />}
                                 {activeTab === 'team' && <TeamTab members={teamMembers} isExecutive={isExecutive} />}
                                 {activeTab === 'timeline' && <TimelineTab project={selectedProject} members={teamMembers} />}
+                                {activeTab === 'time' && <TimeTrackingTab teamId={selectedProject.id} />}
                             </>
                         )}
                     </div>
@@ -1450,12 +1453,264 @@ const ProjectAnalytics = ({ userRole = 'manager', dashboardPrefix = '/manager-da
         );
     }
 
+    // ... inside ProjectAnalytics component ...
+
+    // ================================
+    // Time & Effort Tab (Auto-Calculated)
+    // ================================
+    const TimeTrackingTab = ({ teamId }) => {
+        const [stats, setStats] = useState([]);
+        const [loading, setLoading] = useState(true);
+
+        useEffect(() => {
+            fetchAutoStats();
+        }, [teamId]);
+
+        const fetchAutoStats = async () => {
+            try {
+                // 1. Fetch Tasks for this Project
+                const { data: projectTasks, error: taskError } = await supabase
+                    .from('tasks')
+                    .select('id, assigned_to, status, created_at')
+                    .eq('project_id', teamId);
+
+                if (taskError) throw taskError;
+
+                if (!projectTasks || projectTasks.length === 0) {
+                    setStats([]);
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Identify Team Members involved
+                const userIds = [...new Set(projectTasks.map(t => t.assigned_to).filter(Boolean))];
+
+                if (userIds.length === 0) {
+                    setStats([]);
+                    setLoading(false);
+                    return;
+                }
+
+                // 3. Fetch Profiles (now including role)
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, email, role')
+                    .in('id', userIds);
+
+                // 4. Fetch Global Tasks (All projects) to calculate Work Distribution Ratio
+                const { data: globalTasks } = await supabase
+                    .from('tasks')
+                    .select('id, assigned_to')
+                    .in('assigned_to', userIds);
+
+                // 5. Fetch Attendance
+                const { data: attendance } = await supabase
+                    .from('attendance')
+                    .select('employee_id, date, total_hours')
+                    .in('employee_id', userIds);
+
+                // 6. Calculate Metrics with Weighted Logic
+                const calculatedStats = userIds.map(uid => {
+                    const userProjectTasks = projectTasks.filter(t => t.assigned_to === uid);
+                    const userTotalTasks = globalTasks?.filter(t => t.assigned_to === uid) || [];
+                    const userAttendance = attendance?.filter(a => a.employee_id === uid) || [];
+
+                    // Totals
+                    const totalAttendanceHours = userAttendance.reduce((acc, curr) => acc + (parseFloat(curr.total_hours) || 0), 0);
+                    const completedTasks = userProjectTasks.filter(t => t.status === 'Completed').length;
+
+                    // Weighted Calculation
+                    // Formula: Total Attendance * (Project Tasks / Total Assigned Tasks)
+                    const projectTaskCount = userProjectTasks.length;
+                    const globalTaskCount = userTotalTasks.length;
+
+                    let weightedHours = 0;
+                    if (globalTaskCount > 0) {
+                        // Prevent division by zero
+                        weightedHours = totalAttendanceHours * (projectTaskCount / globalTaskCount);
+                    }
+
+                    return {
+                        user_id: uid,
+                        profile: profiles.find(p => p.id === uid),
+                        project_task_count: projectTaskCount,
+                        global_task_count: globalTaskCount,
+                        completed_tasks: completedTasks,
+                        days_present: userAttendance.length,
+                        total_attendance_hours: totalAttendanceHours,
+                        weighted_hours: weightedHours
+                    };
+                });
+
+                setStats(calculatedStats);
+            } catch (err) {
+                console.error('Error fetching auto stats:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Calculating metrics...</div>;
+
+        if (stats.length === 0) {
+            return (
+                <div style={{
+                    textAlign: 'center',
+                    padding: '60px 40px',
+                    background: '#f8fafc',
+                    borderRadius: '16px',
+                    border: '1px dashed #cbd5e1'
+                }}>
+                    <div style={{
+                        width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+                        color: '#94a3b8'
+                    }}>
+                        <Clock size={24} />
+                    </div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>No Activity Data</h3>
+                    <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                        No tasks have been assigned or completed for this project yet.
+                    </p>
+                </div>
+            );
+        }
+
+        // Helper component for Charts (Inlined here for scope access or define outside)
+
+
+        return (
+            <div>
+                {/* Visual Analytics Sections */}
+                <div style={{ display: 'flex', gap: '24px', marginBottom: '32px' }}>
+                    {/* Left: Main Chart Area */}
+                    <div style={{
+                        flex: 2,
+                        backgroundColor: '#ffffff',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        border: '1px solid #eef2f6',
+                        minHeight: '320px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        <div style={{ marginBottom: '24px' }}>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '4px' }}>Team Contribution</h3>
+                            <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Estimated hours per member based on task load</p>
+                        </div>
+
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                            {stats.map((stat) => (
+                                <div key={stat.user_id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }}>
+                                    <div
+                                        title={`${stat.weighted_hours.toFixed(1)} hrs`}
+                                        style={{
+                                            width: '32px',
+                                            height: `${Math.max((stat.weighted_hours / (stats.reduce((a, b) => Math.max(a, b.weighted_hours), 0) || 1)) * 150, 4)}px`,
+                                            background: 'linear-gradient(to top, #3b82f6, #8b5cf6)',
+                                            borderRadius: '20px 20px 6px 6px',
+                                            opacity: 0.9,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    ></div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textAlign: 'center', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {stat.profile?.full_name?.split(' ')[0] || 'User'}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Right: Key Metrics */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <StatCard
+                            label="Total Project Hours"
+                            value={stats.reduce((acc, curr) => acc + curr.weighted_hours, 0).toFixed(1)}
+                            subLabel="hrs"
+                            icon={<Clock size={20} />}
+                            color="#3b82f6"
+                        />
+                        <StatCard
+                            label="Avg. Burden"
+                            value={`${(stats.reduce((acc, curr) => acc + (curr.project_task_count / (curr.global_task_count || 1)), 0) / stats.length * 100).toFixed(0)}%`}
+                            subLabel="load"
+                            icon={<TrendingUp size={20} />} // Assuming TrendingUp is imported, if not use ChartBar or Activity
+                            color="#f59e0b"
+                        />
+                        <StatCard
+                            label="Active Contributors"
+                            value={stats.length}
+                            icon={<Users size={20} />} // Assuming Users is imported
+                            color="#10b981"
+                        />
+                    </div>
+                </div>
+
+                {/* Detailed Data Table */}
+                <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Employee</th>
+                                <th style={{ padding: '16px', textAlign: 'left', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Role</th>
+                                <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Project Burden</th>
+                                <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Task Ratio</th>
+                                <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Total Attendance</th>
+                                <th style={{ padding: '16px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Est. Project Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {stats.map((stat) => (
+                                <tr key={stat.user_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '16px' }}>
+                                        <div style={{ fontWeight: 500, color: '#0f172a' }}>{stat.profile?.full_name || 'Unknown'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{stat.profile?.email}</div>
+                                    </td>
+                                    <td style={{ padding: '16px' }}>
+                                        <span style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            backgroundColor: stat.profile?.role === 'Executive' ? '#fef3c7' : stat.profile?.role === 'Manager' ? '#e0e7ff' : '#f1f5f9',
+                                            color: stat.profile?.role === 'Executive' ? '#d97706' : stat.profile?.role === 'Manager' ? '#4f46e5' : '#64748b',
+                                            border: `1px solid ${stat.profile?.role === 'Executive' ? '#fcd34d' : stat.profile?.role === 'Manager' ? '#c7d2fe' : '#e2e8f0'}`
+                                        }}>
+                                            {stat.profile?.role || 'Employee'}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '16px', textAlign: 'right', fontWeight: 600, color: '#3b82f6' }}>
+                                        {((stat.project_task_count / (stat.global_task_count || 1)) * 100).toFixed(0)}%
+                                    </td>
+                                    <td style={{ padding: '16px', textAlign: 'right', color: '#64748b', fontSize: '0.85rem' }}>
+                                        {stat.project_task_count} / {stat.global_task_count}
+                                    </td>
+                                    <td style={{ padding: '16px', textAlign: 'right', color: '#94a3b8' }}>
+                                        {stat.total_attendance_hours.toFixed(1)}h
+                                    </td>
+                                    <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
+                                        {stat.weighted_hours.toFixed(1)}h
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                    * Project Hours = Total Attendance × (Project Tasks / Total User Tasks)
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div style={{ padding: '24px', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
             {selectedProject ? <ProjectDetailView /> : <ProjectListView />}
 
             {/* Add Financial Entry Modal */}
             {showFinancialModal && (
+                // ... existing modal code ...
                 <div style={{
                     position: 'fixed',
                     top: 0,
@@ -1503,6 +1758,7 @@ const ProjectAnalytics = ({ userRole = 'manager', dashboardPrefix = '/manager-da
 
                         {/* Modal Body */}
                         <div style={{ padding: '20px' }}>
+                            {/* ... Form inputs ... */}
                             <p style={{ color: '#64748b', marginBottom: '20px' }}>
                                 Project: <strong>{selectedProject?.name}</strong>
                             </p>
@@ -1679,5 +1935,24 @@ const ProjectAnalytics = ({ userRole = 'manager', dashboardPrefix = '/manager-da
         </div>
     );
 };
+
+// Helper component for Charts
+const StatCard = ({ label, value, subLabel, icon, color }) => (
+    <div style={{
+        backgroundColor: 'white', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0',
+        display: 'flex', flexDirection: 'column', gap: '12px', flex: 1
+    }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ padding: '10px', borderRadius: '12px', backgroundColor: `${color}15`, color: color }}>
+                {icon}
+            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{value}</h3>
+            {subLabel && <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#94a3b8' }}>{subLabel}</span>}
+        </div>
+    </div>
+);
 
 export default ProjectAnalytics;

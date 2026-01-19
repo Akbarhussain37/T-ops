@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../context/UserContext';
-import { TrendingUp, Award, Briefcase, Star, Clock, Calendar, Download } from 'lucide-react';
+import { TrendingUp, Award, Briefcase, Star, Clock, Calendar, Download, AlertCircle } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useToast } from '../../context/ToastContext';
+import EmployeeRecognitionBoard from '../../../shared/EmployeeRecognitionBoard';
 
 const AnalyticsDemo = () => {
     const { userName } = useUser();
@@ -15,8 +16,11 @@ const AnalyticsDemo = () => {
         activeTasks: 0,
         attendance: '0%'
     });
+    const [showInfo, setShowInfo] = useState(false);
 
     const [performanceHistory, setPerformanceHistory] = useState([]);
+
+    const [projectStats, setProjectStats] = useState([]);
 
     useEffect(() => {
         fetchAnalytics();
@@ -44,6 +48,18 @@ const AnalyticsDemo = () => {
 
             if (attendanceError) throw attendanceError;
 
+            // 3. Fetch Projects (for Work Distribution)
+            const projectIds = [...new Set(tasks.map(t => t.project_id).filter(Boolean))];
+            let projects = [];
+            if (projectIds.length > 0) {
+                const { data: projs } = await supabase
+                    .from('projects')
+                    .select('id, name')
+                    .in('id', projectIds);
+                projects = projs || [];
+            }
+
+
             // --- Calculate Stats ---
 
             // Tasks Stats
@@ -55,6 +71,7 @@ const AnalyticsDemo = () => {
 
             // Attendance Stats
             const totalAttendanceDays = attendance.length;
+            const totalAttendanceHours = attendance.reduce((acc, curr) => acc + (parseFloat(curr.total_hours) || 0), 0);
             const presentDays = attendance.filter(a => a.status === 'Present').length;
             const attendanceRate = totalAttendanceDays > 0 ? Math.round((presentDays / totalAttendanceDays) * 100) : 0;
 
@@ -62,8 +79,28 @@ const AnalyticsDemo = () => {
                 performance: performanceRate,
                 tasksCompleted: completedTasks,
                 activeTasks: activeTasks,
-                attendance: `${attendanceRate}%`
+                attendance: `${attendanceRate}%`,
+                totalAttendanceHours: totalAttendanceHours
             });
+
+            // --- Calculate Project Distribution (Weighted Hours) ---
+            // Formula: Total Attendance Hours * (Project Tasks / Total Tasks)
+            const calculatedProjectStats = projects.map(proj => {
+                const projTasks = tasks.filter(t => t.project_id === proj.id).length;
+                const weight = totalTasks > 0 ? (projTasks / totalTasks) : 0;
+                const estimatedHours = totalAttendanceHours * weight;
+
+                return {
+                    id: proj.id,
+                    name: proj.name,
+                    taskCount: projTasks,
+                    weight: Math.round(weight * 100),
+                    hours: estimatedHours
+                };
+            }).sort((a, b) => b.hours - a.hours); // Sort by hours descending
+
+            setProjectStats(calculatedProjectStats);
+
 
             // --- Calculate History (Last 6 Months) ---
             const last6Months = [];
@@ -143,6 +180,70 @@ const AnalyticsDemo = () => {
 
             {/* Main Content Grid - Bento Style */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '16px' }}>
+
+                {/* Project Work Distribution (New Card) */}
+                <div style={{
+                    gridColumn: 'span 4',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '16px',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.02)',
+                    padding: '24px',
+                    border: '1px solid #eef2f6',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                }}>
+                    <div style={{ marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '4px' }}>Work Distribution</h3>
+                            <div
+                                onClick={() => setShowInfo(!showInfo)}
+                                style={{ cursor: 'pointer', color: showInfo ? '#3b82f6' : '#94a3b8' }}
+                            >
+                                <AlertCircle size={16} />
+                            </div>
+                        </div>
+                        {showInfo && (
+                            <div style={{
+                                marginTop: '8px',
+                                marginBottom: '12px',
+                                padding: '12px 16px',
+                                backgroundColor: '#f1f5f9',
+                                borderRadius: '12px',
+                                fontSize: '0.85rem',
+                                color: '#334155',
+                                border: '1px solid #e2e8f0',
+                                fontWeight: 500
+                            }}>
+                                <p style={{ margin: '0 0 4px 0', fontWeight: 700, color: '#0f172a' }}>Calculation Formula:</p>
+                                <p style={{ margin: 0, lineHeight: 1.5 }}>Estimated Hours = Total Attendance Hours × (Project Tasks / Total Assigned Tasks)</p>
+                            </div>
+                        )}
+                        <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Estimated hours per project</p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {projectStats.length > 0 ? (
+                            projectStats.map((proj) => (
+                                <div key={proj.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>{proj.name}</span>
+                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{proj.taskCount} Tasks ({proj.weight}%)</span>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span style={{ fontSize: '1rem', fontWeight: 800, color: '#3b82f6' }}>{proj.hours.toFixed(1)}h</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', padding: '20px' }}>
+                                No project data available
+                            </div>
+                        )}
+                    </div>
+                </div>
+
 
                 {/* Primary Chart Area (Large) */}
                 <div style={{
@@ -230,7 +331,7 @@ const AnalyticsDemo = () => {
                 </div>
 
                 {/* Bottom Stats Row (Remaining) */}
-                <div style={{ gridColumn: 'span 6' }}>
+                <div style={{ gridColumn: 'span 4' }}>
                     <StatCard
                         label="Tasks Completed"
                         value={myStats.tasksCompleted}
@@ -239,7 +340,17 @@ const AnalyticsDemo = () => {
                         color="#3b82f6"
                     />
                 </div>
-                <div style={{ gridColumn: 'span 6' }}>
+                <div style={{ gridColumn: 'span 4' }}>
+                    {/* Placeholder or another stat */}
+                    <StatCard
+                        label="Total Hours"
+                        value={myStats.totalAttendanceHours ? myStats.totalAttendanceHours.toFixed(1) : '0'}
+
+                        icon={<Clock size={24} />}
+                        color="#6366f1"
+                    />
+                </div>
+                <div style={{ gridColumn: 'span 4' }}>
                     <StatCard
                         label="Active Pipeline"
                         value={myStats.activeTasks}
@@ -247,6 +358,11 @@ const AnalyticsDemo = () => {
                         icon={<Star size={24} />}
                         color="#8b5cf6"
                     />
+                </div>
+
+                {/* Employee Recognition Board */}
+                <div style={{ gridColumn: 'span 12' }}>
+                    <EmployeeRecognitionBoard />
                 </div>
             </div>
         </div>

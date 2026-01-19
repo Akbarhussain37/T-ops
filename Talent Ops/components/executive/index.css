@@ -34,6 +34,56 @@
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* Sidebar Variables (Light Mode) */
+  --sidebar-bg: #1e293b;
+  /* Dark sidebar by default even in light mode for contrast, or change to #ffffff */
+  --sidebar-text: #94a3b8;
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  --sidebar-active-bg: #7C3AED;
+  --sidebar-active-text: #ffffff;
+
+  /* Stats Card Variables */
+  --card-bg: #ffffff;
+  --card-border: #f1f5f9;
+  --card-text: #0f172a;
+  --card-subtext: #64748b;
+}
+
+[data-theme='dark'] {
+  --primary: #f8fafc;
+  --primary-light: #e2e8f0;
+  --background: #0f172a;
+  /* Slate 900 */
+  --surface: #1e293b;
+  /* Slate 800 */
+  --text-main: #f8fafc;
+  --text-secondary: #94a3b8;
+  /* Slate 400 */
+  --border: #334155;
+  /* Slate 700 */
+
+  /* Sidebar Variables (Dark Mode) */
+  --sidebar-bg: #0f172a;
+  --sidebar-text: #94a3b8;
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg: #7C3AED;
+  /* Keep same accent */
+  --sidebar-active-text: #ffffff;
+
+  /* Stats Card Variables */
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --card-text: #f8fafc;
+  --card-subtext: #94a3b8;
+
+  /* Shadows needed to be subtler or different on dark bg?
+     Actually, standard shadows are invisible on black. 
+     We often inverted them or use borders. 
+     But let's make them heavier black for now. 
+  */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
 }
 
 * {

@@ -11,6 +11,8 @@ const MyTasksPage = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     // Proof upload states
     const [showProofModal, setShowProofModal] = useState(false);
@@ -494,10 +496,20 @@ const MyTasksPage = () => {
         );
     };
 
-    const filteredTasks = tasks.filter(t =>
-        t.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.projects?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTasks = tasks.filter(t => {
+        const matchesSearch = t.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            t.projects?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // Date filter
+        const matchesDate = !dateFilter || (t.due_date && t.due_date === dateFilter);
+
+        // Status filter
+        const matchesStatus = statusFilter === 'all' ||
+            (t.status?.toLowerCase() === statusFilter.toLowerCase()) ||
+            (t.sub_state?.replace('_', ' ').toLowerCase() === statusFilter.toLowerCase());
+
+        return matchesSearch && matchesDate && matchesStatus;
+    });
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -580,19 +592,184 @@ const MyTasksPage = () => {
                 </p>
             </div>
 
-            {/* Toolbar */}
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: 'var(--surface)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                <div style={{ position: 'relative', minWidth: '300px' }}>
-                    <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            {/* Premium Toolbar */}
+            <div style={{
+                display: 'flex',
+                gap: '16px',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                backgroundColor: 'white',
+                padding: '12px 16px',
+                borderRadius: '16px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                border: '1px solid rgba(226, 232, 240, 0.8)'
+            }}>
+                {/* Search Field */}
+                <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
+                    <Search size={18} style={{
+                        position: 'absolute',
+                        left: '14px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#94a3b8'
+                    }} />
                     <input
                         type="text"
                         placeholder="Search tasks..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ width: '100%', padding: '10px 12px 10px 40px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.95rem', outline: 'none' }}
+                        style={{
+                            width: '100%',
+                            padding: '12px 16px 12px 42px',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            backgroundColor: '#f8fafc',
+                            transition: 'all 0.2s',
+                            color: '#334155'
+                        }}
+                        onFocus={(e) => {
+                            e.target.style.backgroundColor = 'white';
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.backgroundColor = '#f8fafc';
+                            e.target.style.borderColor = '#e2e8f0';
+                            e.target.style.boxShadow = 'none';
+                        }}
                     />
                 </div>
+
+                {/* Filters Group */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+                    {/* Date Picker */}
+                    <div style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '4px',
+                        transition: 'all 0.2s'
+                    }}>
+                        <div style={{
+                            padding: '8px 12px',
+                            color: '#64748b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRight: '1px solid #e2e8f0'
+                        }}>
+                            <Calendar size={16} />
+                        </div>
+                        <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                border: 'none',
+                                outline: 'none',
+                                backgroundColor: 'transparent',
+                                color: '#334155',
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                height: '24px',
+                                fontFamily: 'inherit',
+                                fontWeight: 500
+                            }}
+                        />
+                    </div>
+
+                    {/* Today Button */}
+                    <button
+                        onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+                            transition: 'all 0.2s'
+                        }}
+                        title="Show Today's Tasks"
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                        <Clock size={16} />
+                        <span>Today</span>
+                    </button>
+
+                    {/* Clear Button - Only show when date is selected */}
+                    {dateFilter && (
+                        <button
+                            onClick={() => setDateFilter('')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '12px',
+                                border: '1px solid #fee2e2',
+                                backgroundColor: '#fff1f2',
+                                color: '#e11d48',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 2px 8px rgba(225, 29, 72, 0.05)'
+                            }}
+                            title="Clear Date Filter"
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ffe4e6';
+                                e.currentTarget.style.transform = 'rotate(90deg)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#fff1f2';
+                                e.currentTarget.style.transform = 'rotate(0deg)';
+                            }}
+                        >
+                            <X size={18} />
+                        </button>
+                    )}
+                </div>
+
+                {/* Status Filter */}
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    style={{
+                        padding: '10px 16px',
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0',
+                        backgroundColor: '#f8fafc',
+                        color: '#334155',
+                        fontWeight: 500,
+                        fontSize: '0.9rem',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        height: '42px',
+                        minWidth: '140px'
+                    }}
+                >
+                    <option value="all">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="on hold">On Hold</option>
+                </select>
             </div>
+
 
             {/* Tasks Table */}
             <div style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -773,433 +950,439 @@ const MyTasksPage = () => {
                         )}
                     </tbody>
                 </table>
-            </div>
+            </div >
 
             {/* Proof Upload Modal */}
-            {showProofModal && taskForProof && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(4px)' }}>
-                    <div style={{ backgroundColor: 'var(--surface)', padding: '32px', borderRadius: '20px', width: '500px', maxWidth: '90%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                            <div style={{ backgroundColor: '#ede9fe', borderRadius: '12px', padding: '12px' }}>
-                                <Upload size={24} color="#8b5cf6" />
-                            </div>
-                            <div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Submit Proof for Validation</h3>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{taskForProof.title}</p>
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#fef3c7', borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <AlertCircle size={20} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
-                            <div style={{ fontSize: '0.9rem', color: '#92400e' }}>
-                                <strong>Proof Required:</strong> Upload documentation showing your completed work before requesting validation.
-                            </div>
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
-                                    Upload Proof Document (Optional)
-                                </label>
-                                <div style={{
-                                    border: '2px dashed var(--border)',
-                                    borderRadius: '12px',
-                                    padding: '24px',
-                                    textAlign: 'center',
-                                    backgroundColor: proofFile ? '#f0fdf4' : 'var(--background)',
-                                    cursor: 'pointer'
-                                }}
-                                    onClick={() => document.getElementById('proof-file-input').click()}
-                                >
-                                    <input id="proof-file-input" type="file" onChange={handleFileChange} style={{ display: 'none' }}
-                                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.zip,.txt" />
-                                    {proofFile ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                                            <FileText size={32} color="#10b981" />
-                                            <div style={{ textAlign: 'left' }}>
-                                                <div style={{ fontWeight: 600, color: '#166534' }}>{proofFile.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{(proofFile.size / 1024).toFixed(1)} KB</div>
-                                            </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setProofFile(null); }}
-                                                style={{
-                                                    marginLeft: 'auto',
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    color: '#ef4444',
-                                                    padding: '4px'
-                                                }}
-                                                title="Remove file"
-                                            >
-                                                <X size={18} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <Upload size={32} color="#9ca3af" style={{ marginBottom: '12px' }} />
-                                            <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Click to upload</div>
-                                            <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>PDF, DOC, PNG, JPG, ZIP (max 10MB)</div>
-                                        </>
-                                    )}
+            {
+                showProofModal && taskForProof && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(4px)' }}>
+                        <div style={{ backgroundColor: 'var(--surface)', padding: '32px', borderRadius: '20px', width: '500px', maxWidth: '90%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                                <div style={{ backgroundColor: '#ede9fe', borderRadius: '12px', padding: '12px' }}>
+                                    <Upload size={24} color="#8b5cf6" />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Submit Proof for Validation</h3>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{taskForProof.title}</p>
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
-                                    Text Message / Notes (Optional)
-                                </label>
-                                <textarea
-                                    value={proofText}
-                                    onChange={(e) => setProofText(e.target.value)}
-                                    placeholder="Enter any notes, links, or description..."
-                                    rows={3}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px',
-                                        borderRadius: '10px',
-                                        border: '1px solid var(--border)',
-                                        backgroundColor: 'var(--background)',
-                                        fontSize: '0.9rem',
-                                        boxSizing: 'border-box'
-                                    }}
-                                />
+                            <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#fef3c7', borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                <AlertCircle size={20} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                <div style={{ fontSize: '0.9rem', color: '#92400e' }}>
+                                    <strong>Proof Required:</strong> Upload documentation showing your completed work before requesting validation.
+                                </div>
                             </div>
 
-
-                        </div>
-
-                        {uploading && (
                             <div style={{ marginBottom: '24px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-                                    <span>Uploading...</span>
-                                    <span>{uploadProgress}%</span>
-                                </div>
-                                <div style={{ height: '8px', backgroundColor: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', width: `${uploadProgress}%`, backgroundColor: '#8b5cf6', transition: 'width 0.3s', borderRadius: '4px' }} />
-                                </div>
-                            </div>
-                        )}
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                            <button onClick={() => { setShowProofModal(false); setTaskForProof(null); setProofFile(null); setProofText(''); }} disabled={uploading}
-                                style={{ padding: '12px 24px', borderRadius: '10px', backgroundColor: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}>
-                                Cancel
-                            </button>
-                            <button onClick={uploadProofAndRequestValidation} disabled={(!proofFile && !proofText.trim()) || uploading}
-                                style={{
-                                    padding: '12px 24px', borderRadius: '10px',
-                                    background: (proofFile || proofText.trim()) ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : '#e5e7eb',
-                                    color: (proofFile || proofText.trim()) ? 'white' : '#9ca3af', border: 'none', fontWeight: 600,
-                                    cursor: (proofFile || proofText.trim()) ? 'pointer' : 'not-allowed',
-                                    display: 'flex', alignItems: 'center', gap: '8px',
-                                    boxShadow: (proofFile || proofText.trim()) ? '0 4px 15px rgba(139, 92, 246, 0.3)' : 'none'
-                                }}>
-                                <Send size={16} />
-                                {uploading ? 'Uploading...' : 'Submit for Validation'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Issue Logging Modal */}
-            {showIssueModal && taskForIssue && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(4px)' }}>
-                    <div style={{ backgroundColor: 'var(--surface)', padding: '32px', borderRadius: '20px', width: '600px', maxWidth: '90%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                            <div style={{ backgroundColor: '#fef2f2', borderRadius: '12px', padding: '12px' }}>
-                                <AlertTriangle size={24} color="#ef4444" />
-                            </div>
-                            <div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Report Issue</h3>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{taskForIssue.title}</p>
-                            </div>
-                        </div>
-
-                        {taskForIssue.issues && (
-                            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
-                                <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#991b1b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <AlertCircle size={16} /> Existing Issues
-                                </h4>
-                                <div style={{ fontSize: '0.85rem', color: '#7f1d1d', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', lineHeight: '1.6' }}>
-                                    {taskForIssue.issues}
-                                </div>
-                            </div>
-                        )}
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
-                                Describe the Issue *
-                            </label>
-                            <textarea
-                                value={issueText}
-                                onChange={(e) => setIssueText(e.target.value)}
-                                placeholder="Describe the issue you're facing with this task..."
-                                rows="5"
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    borderRadius: '12px',
-                                    border: '2px solid var(--border)',
-                                    fontSize: '0.9rem',
-                                    resize: 'vertical',
-                                    outline: 'none',
-                                    fontFamily: 'inherit'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = '#ef4444'}
-                                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                            <button
-                                onClick={() => { setShowIssueModal(false); setTaskForIssue(null); setIssueText(''); }}
-                                disabled={submittingIssue}
-                                style={{ padding: '12px 24px', borderRadius: '10px', backgroundColor: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={submitIssue}
-                                disabled={!issueText.trim() || submittingIssue}
-                                style={{
-                                    padding: '12px 24px',
-                                    borderRadius: '10px',
-                                    background: issueText.trim() ? 'linear-gradient(135deg, #ef4444, #dc2626)' : '#e5e7eb',
-                                    color: issueText.trim() ? 'white' : '#9ca3af',
-                                    border: 'none',
-                                    fontWeight: 600,
-                                    cursor: issueText.trim() ? 'pointer' : 'not-allowed',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    boxShadow: issueText.trim() ? '0 4px 15px rgba(239, 68, 68, 0.3)' : 'none'
-                                }}
-                            >
-                                <Send size={16} />
-                                {submittingIssue ? 'Submitting...' : 'Submit Issue'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* View Task Modal */}
-            {showViewModal && taskForView && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(4px)' }}>
-                    <div style={{ backgroundColor: 'var(--surface)', padding: '32px', borderRadius: '20px', width: '600px', maxWidth: '90%', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                            <div>
-                                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Task Details</h3>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <span style={{
-                                        fontSize: '0.75rem', padding: '4px 10px', borderRadius: '20px',
-                                        backgroundColor: getPriorityColor(taskForView.priority).bg,
-                                        color: getPriorityColor(taskForView.priority).text, fontWeight: 600,
-                                        textTransform: 'capitalize'
-                                    }}>
-                                        {taskForView.priority || 'Medium'} Priority
-                                    </span>
-                                    <span style={{
-                                        fontSize: '0.75rem', padding: '4px 10px', borderRadius: '20px',
-                                        backgroundColor: getSubStateColor(taskForView.sub_state).bg,
-                                        color: getSubStateColor(taskForView.sub_state).text, fontWeight: 600,
-                                        textTransform: 'capitalize'
-                                    }}>
-                                        {taskForView.sub_state?.replace(/_/g, ' ') || 'Pending'}
-                                    </span>
-                                </div>
-                            </div>
-                            <button onClick={() => { setShowViewModal(false); setTaskForView(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
-                                <AlertCircle size={24} style={{ transform: 'rotate(45deg)' }} /> {/* Using AlertCircle as close icon fallback if X not imported, essentially creates an X shape roughly */}
-                            </button>
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>TITLE</label>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>{taskForView.title}</div>
-                        </div>
-
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>DESCRIPTION</label>
-                            <div style={{ fontSize: '1rem', color: '#334155', lineHeight: '1.6', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap' }}>
-                                {taskForView.description || 'No description provided.'}
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>DUE DATE</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: '#334155' }}>
-                                    <Calendar size={18} color="#64748b" />
-                                    {taskForView.due_date ? new Date(taskForView.due_date).toLocaleDateString() : 'No due date'}
-                                </div>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>PHASE</label>
-                                <div style={{ fontSize: '1rem', color: '#334155', textTransform: 'capitalize' }}>
-                                    {taskForView.lifecycle_state?.replace(/_/g, ' ') || 'Requirement Refiner'}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>ALLOCATED HOURS</label>
-                                <div style={{ fontSize: '1rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Clock size={18} color="#64748b" />
-                                    {taskForView.allocated_hours ? `${taskForView.allocated_hours} hrs` : '-'}
-                                </div>
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>STATUS</label>
-                                <div style={{
-                                    display: 'inline-block',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    color: getStatusColor(taskForView.status).text,
-                                    textTransform: 'uppercase',
-                                    backgroundColor: getStatusColor(taskForView.status).bg,
-                                    padding: '4px 10px',
-                                    borderRadius: '6px'
-                                }}>
-                                    {taskForView.status?.replace(/_/g, ' ') || 'Pending'}
-                                </div>
-                            </div>
-                        </div>
-
-                        {taskForView.issues && (
-                            <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#991b1b', marginBottom: '8px' }}>
-                                    <AlertTriangle size={16} /> ISSUES LOGGED
-                                </label>
-                                <div style={{ fontSize: '0.9rem', color: '#7f1d1d', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
-                                    {taskForView.issues}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Validations History */}
-                        {/* Validations History */}
-                        {(() => {
-                            const validations = taskForView.phase_validations || {};
-                            const legacyProof = taskForView.proof_url;
-                            const hasValidations = Object.values(validations).some(v => v.proof_url || v.proof_text);
-                            const hasLegacy = !!legacyProof && !hasValidations; // Only show legacy if no new validations
-
-                            if (!hasValidations && !hasLegacy) return null;
-
-                            return (
-                                <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#166534', marginBottom: '8px' }}>
-                                        <CheckCircle size={16} /> VALIDATION PROOFS
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                                        Upload Proof Document (Optional)
                                     </label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        {/* New System: Phase Validations */}
-                                        {Object.entries(validations).map(([phaseKey, data]) => {
-                                            if (!data.proof_url && !data.proof_text) return null;
-                                            const phaseLabel = LIFECYCLE_PHASES.find(p => p.key === phaseKey)?.label || phaseKey;
-                                            return (
-                                                <div key={phaseKey} style={{ padding: '12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #dcfce7' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: data.proof_text ? '8px' : '0' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#166534' }}>{phaseLabel}:</span>
-                                                            {data.proof_url && (
-                                                                <span style={{ fontSize: '0.85rem', color: '#15803d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                                                                    {data.proof_url.split('/').pop()}
-                                                                </span>
-                                                            )}
-                                                            {!data.proof_url && <span style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>Text Submission</span>}
-                                                        </div>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                            {data.proof_url && (
-                                                                <a href={data.proof_url} target="_blank" rel="noopener noreferrer"
-                                                                    style={{ fontSize: '0.8rem', fontWeight: 600, color: '#166534', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
-                                                                    View File
-                                                                </a>
-                                                            )}
-                                                            <button
-                                                                onClick={() => handleDeleteProof(taskForView, phaseKey)}
-                                                                style={{
-                                                                    background: 'none',
-                                                                    border: 'none',
-                                                                    cursor: 'pointer',
-                                                                    color: '#ef4444',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    padding: '4px',
-                                                                    borderRadius: '4px'
-                                                                }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                title="Delete Proof"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    {data.proof_text && (
-                                                        <div style={{ fontSize: '0.85rem', color: '#334155', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '6px', borderTop: '1px solid #f1f5f9', whiteSpace: 'pre-wrap' }}>
-                                                            {data.proof_text}
-                                                        </div>
-                                                    )}
+                                    <div style={{
+                                        border: '2px dashed var(--border)',
+                                        borderRadius: '12px',
+                                        padding: '24px',
+                                        textAlign: 'center',
+                                        backgroundColor: proofFile ? '#f0fdf4' : 'var(--background)',
+                                        cursor: 'pointer'
+                                    }}
+                                        onClick={() => document.getElementById('proof-file-input').click()}
+                                    >
+                                        <input id="proof-file-input" type="file" onChange={handleFileChange} style={{ display: 'none' }}
+                                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.zip,.txt" />
+                                        {proofFile ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                                                <FileText size={32} color="#10b981" />
+                                                <div style={{ textAlign: 'left' }}>
+                                                    <div style={{ fontWeight: 600, color: '#166534' }}>{proofFile.name}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{(proofFile.size / 1024).toFixed(1)} KB</div>
                                                 </div>
-                                            );
-                                        })}
-
-                                        {/* Legacy Support */}
-                                        {hasLegacy && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #dcfce7' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>[Legacy]</span>
-                                                    <span style={{ fontSize: '0.85rem', color: '#15803d' }}>{legacyProof.split('/').pop()}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <a href={legacyProof} target="_blank" rel="noopener noreferrer"
-                                                        style={{ fontSize: '0.8rem', fontWeight: 600, color: '#166534', textDecoration: 'underline' }}>
-                                                        View File
-                                                    </a>
-                                                    <button
-                                                        onClick={() => handleDeleteProof(selectedTaskForView, 'LEGACY_PROOF')}
-                                                        style={{
-                                                            background: 'none',
-                                                            border: 'none',
-                                                            cursor: 'pointer',
-                                                            color: '#ef4444',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            padding: '4px',
-                                                            borderRadius: '4px'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                        title="Delete Legacy Proof"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setProofFile(null); }}
+                                                    style={{
+                                                        marginLeft: 'auto',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        color: '#ef4444',
+                                                        padding: '4px'
+                                                    }}
+                                                    title="Remove file"
+                                                >
+                                                    <X size={18} />
+                                                </button>
                                             </div>
+                                        ) : (
+                                            <>
+                                                <Upload size={32} color="#9ca3af" style={{ marginBottom: '12px' }} />
+                                                <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Click to upload</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>PDF, DOC, PNG, JPG, ZIP (max 10MB)</div>
+                                            </>
                                         )}
                                     </div>
                                 </div>
-                            );
-                        })()}
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button
-                                onClick={() => { setShowViewModal(false); setTaskForView(null); }}
-                                style={{ padding: '10px 24px', borderRadius: '8px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', fontWeight: 600, cursor: 'pointer' }}
-                            >
-                                Close
-                            </button>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                                        Text Message / Notes (Optional)
+                                    </label>
+                                    <textarea
+                                        value={proofText}
+                                        onChange={(e) => setProofText(e.target.value)}
+                                        placeholder="Enter any notes, links, or description..."
+                                        rows={3}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px',
+                                            borderRadius: '10px',
+                                            border: '1px solid var(--border)',
+                                            backgroundColor: 'var(--background)',
+                                            fontSize: '0.9rem',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+
+                            </div>
+
+                            {uploading && (
+                                <div style={{ marginBottom: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
+                                        <span>Uploading...</span>
+                                        <span>{uploadProgress}%</span>
+                                    </div>
+                                    <div style={{ height: '8px', backgroundColor: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', width: `${uploadProgress}%`, backgroundColor: '#8b5cf6', transition: 'width 0.3s', borderRadius: '4px' }} />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                <button onClick={() => { setShowProofModal(false); setTaskForProof(null); setProofFile(null); setProofText(''); }} disabled={uploading}
+                                    style={{ padding: '12px 24px', borderRadius: '10px', backgroundColor: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}>
+                                    Cancel
+                                </button>
+                                <button onClick={uploadProofAndRequestValidation} disabled={(!proofFile && !proofText.trim()) || uploading}
+                                    style={{
+                                        padding: '12px 24px', borderRadius: '10px',
+                                        background: (proofFile || proofText.trim()) ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : '#e5e7eb',
+                                        color: (proofFile || proofText.trim()) ? 'white' : '#9ca3af', border: 'none', fontWeight: 600,
+                                        cursor: (proofFile || proofText.trim()) ? 'pointer' : 'not-allowed',
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        boxShadow: (proofFile || proofText.trim()) ? '0 4px 15px rgba(139, 92, 246, 0.3)' : 'none'
+                                    }}>
+                                    <Send size={16} />
+                                    {uploading ? 'Uploading...' : 'Submit for Validation'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Issue Logging Modal */}
-        </div>
+            {
+                showIssueModal && taskForIssue && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(4px)' }}>
+                        <div style={{ backgroundColor: 'var(--surface)', padding: '32px', borderRadius: '20px', width: '600px', maxWidth: '90%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                                <div style={{ backgroundColor: '#fef2f2', borderRadius: '12px', padding: '12px' }}>
+                                    <AlertTriangle size={24} color="#ef4444" />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Report Issue</h3>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{taskForIssue.title}</p>
+                                </div>
+                            </div>
+
+                            {taskForIssue.issues && (
+                                <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
+                                    <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#991b1b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <AlertCircle size={16} /> Existing Issues
+                                    </h4>
+                                    <div style={{ fontSize: '0.85rem', color: '#7f1d1d', whiteSpace: 'pre-wrap', maxHeight: '150px', overflowY: 'auto', lineHeight: '1.6' }}>
+                                        {taskForIssue.issues}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                                    Describe the Issue *
+                                </label>
+                                <textarea
+                                    value={issueText}
+                                    onChange={(e) => setIssueText(e.target.value)}
+                                    placeholder="Describe the issue you're facing with this task..."
+                                    rows="5"
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        border: '2px solid var(--border)',
+                                        fontSize: '0.9rem',
+                                        resize: 'vertical',
+                                        outline: 'none',
+                                        fontFamily: 'inherit'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = '#ef4444'}
+                                    onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                <button
+                                    onClick={() => { setShowIssueModal(false); setTaskForIssue(null); setIssueText(''); }}
+                                    disabled={submittingIssue}
+                                    style={{ padding: '12px 24px', borderRadius: '10px', backgroundColor: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={submitIssue}
+                                    disabled={!issueText.trim() || submittingIssue}
+                                    style={{
+                                        padding: '12px 24px',
+                                        borderRadius: '10px',
+                                        background: issueText.trim() ? 'linear-gradient(135deg, #ef4444, #dc2626)' : '#e5e7eb',
+                                        color: issueText.trim() ? 'white' : '#9ca3af',
+                                        border: 'none',
+                                        fontWeight: 600,
+                                        cursor: issueText.trim() ? 'pointer' : 'not-allowed',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        boxShadow: issueText.trim() ? '0 4px 15px rgba(239, 68, 68, 0.3)' : 'none'
+                                    }}
+                                >
+                                    <Send size={16} />
+                                    {submittingIssue ? 'Submitting...' : 'Submit Issue'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* View Task Modal */}
+            {
+                showViewModal && taskForView && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(4px)' }}>
+                        <div style={{ backgroundColor: 'var(--surface)', padding: '32px', borderRadius: '20px', width: '600px', maxWidth: '90%', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>Task Details</h3>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <span style={{
+                                            fontSize: '0.75rem', padding: '4px 10px', borderRadius: '20px',
+                                            backgroundColor: getPriorityColor(taskForView.priority).bg,
+                                            color: getPriorityColor(taskForView.priority).text, fontWeight: 600,
+                                            textTransform: 'capitalize'
+                                        }}>
+                                            {taskForView.priority || 'Medium'} Priority
+                                        </span>
+                                        <span style={{
+                                            fontSize: '0.75rem', padding: '4px 10px', borderRadius: '20px',
+                                            backgroundColor: getSubStateColor(taskForView.sub_state).bg,
+                                            color: getSubStateColor(taskForView.sub_state).text, fontWeight: 600,
+                                            textTransform: 'capitalize'
+                                        }}>
+                                            {taskForView.sub_state?.replace(/_/g, ' ') || 'Pending'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onClick={() => { setShowViewModal(false); setTaskForView(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+                                    <AlertCircle size={24} style={{ transform: 'rotate(45deg)' }} /> {/* Using AlertCircle as close icon fallback if X not imported, essentially creates an X shape roughly */}
+                                </button>
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>TITLE</label>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>{taskForView.title}</div>
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>DESCRIPTION</label>
+                                <div style={{ fontSize: '1rem', color: '#334155', lineHeight: '1.6', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap' }}>
+                                    {taskForView.description || 'No description provided.'}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>DUE DATE</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: '#334155' }}>
+                                        <Calendar size={18} color="#64748b" />
+                                        {taskForView.due_date ? new Date(taskForView.due_date).toLocaleDateString() : 'No due date'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>PHASE</label>
+                                    <div style={{ fontSize: '1rem', color: '#334155', textTransform: 'capitalize' }}>
+                                        {taskForView.lifecycle_state?.replace(/_/g, ' ') || 'Requirement Refiner'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>ALLOCATED HOURS</label>
+                                    <div style={{ fontSize: '1rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Clock size={18} color="#64748b" />
+                                        {taskForView.allocated_hours ? `${taskForView.allocated_hours} hrs` : '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>STATUS</label>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 700,
+                                        color: getStatusColor(taskForView.status).text,
+                                        textTransform: 'uppercase',
+                                        backgroundColor: getStatusColor(taskForView.status).bg,
+                                        padding: '4px 10px',
+                                        borderRadius: '6px'
+                                    }}>
+                                        {taskForView.status?.replace(/_/g, ' ') || 'Pending'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {taskForView.issues && (
+                                <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#991b1b', marginBottom: '8px' }}>
+                                        <AlertTriangle size={16} /> ISSUES LOGGED
+                                    </label>
+                                    <div style={{ fontSize: '0.9rem', color: '#7f1d1d', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+                                        {taskForView.issues}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Validations History */}
+                            {/* Validations History */}
+                            {(() => {
+                                const validations = taskForView.phase_validations || {};
+                                const legacyProof = taskForView.proof_url;
+                                const hasValidations = Object.values(validations).some(v => v.proof_url || v.proof_text);
+                                const hasLegacy = !!legacyProof && !hasValidations; // Only show legacy if no new validations
+
+                                if (!hasValidations && !hasLegacy) return null;
+
+                                return (
+                                    <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#166534', marginBottom: '8px' }}>
+                                            <CheckCircle size={16} /> VALIDATION PROOFS
+                                        </label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {/* New System: Phase Validations */}
+                                            {Object.entries(validations).map(([phaseKey, data]) => {
+                                                if (!data.proof_url && !data.proof_text) return null;
+                                                const phaseLabel = LIFECYCLE_PHASES.find(p => p.key === phaseKey)?.label || phaseKey;
+                                                return (
+                                                    <div key={phaseKey} style={{ padding: '12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #dcfce7' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: data.proof_text ? '8px' : '0' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#166534' }}>{phaseLabel}:</span>
+                                                                {data.proof_url && (
+                                                                    <span style={{ fontSize: '0.85rem', color: '#15803d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                                                                        {data.proof_url.split('/').pop()}
+                                                                    </span>
+                                                                )}
+                                                                {!data.proof_url && <span style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>Text Submission</span>}
+                                                            </div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                                {data.proof_url && (
+                                                                    <a href={data.proof_url} target="_blank" rel="noopener noreferrer"
+                                                                        style={{ fontSize: '0.8rem', fontWeight: 600, color: '#166534', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                                                                        View File
+                                                                    </a>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => handleDeleteProof(taskForView, phaseKey)}
+                                                                    style={{
+                                                                        background: 'none',
+                                                                        border: 'none',
+                                                                        cursor: 'pointer',
+                                                                        color: '#ef4444',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        padding: '4px',
+                                                                        borderRadius: '4px'
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    title="Delete Proof"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        {data.proof_text && (
+                                                            <div style={{ fontSize: '0.85rem', color: '#334155', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '6px', borderTop: '1px solid #f1f5f9', whiteSpace: 'pre-wrap' }}>
+                                                                {data.proof_text}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Legacy Support */}
+                                            {hasLegacy && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #dcfce7' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>[Legacy]</span>
+                                                        <span style={{ fontSize: '0.85rem', color: '#15803d' }}>{legacyProof.split('/').pop()}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <a href={legacyProof} target="_blank" rel="noopener noreferrer"
+                                                            style={{ fontSize: '0.8rem', fontWeight: 600, color: '#166534', textDecoration: 'underline' }}>
+                                                            View File
+                                                        </a>
+                                                        <button
+                                                            onClick={() => handleDeleteProof(selectedTaskForView, 'LEGACY_PROOF')}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                color: '#ef4444',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                padding: '4px',
+                                                                borderRadius: '4px'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                            title="Delete Legacy Proof"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => { setShowViewModal(false); setTaskForView(null); }}
+                                    style={{ padding: '10px 24px', borderRadius: '8px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Issue Logging Modal */}
+        </div >
     );
 };
 

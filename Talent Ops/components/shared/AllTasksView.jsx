@@ -18,6 +18,8 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
     const [employees, setEmployees] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [dateFilter, setDateFilter] = useState('');
+
     const [showAddTaskModal, setShowAddTaskModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [submitting, setSubmitting] = useState(false);
@@ -995,7 +997,11 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
         const matchesSearch = task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             task.assignee_name?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'all' || task.status?.toLowerCase() === statusFilter.toLowerCase();
-        return matchesSearch && matchesStatus;
+
+        // Date filter
+        const matchesDate = !dateFilter || (task.due_date && task.due_date === dateFilter);
+
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     if (loading) {
@@ -1150,22 +1156,23 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
                 </div>
             </div>
 
-            {/* Filters */}
+            {/* Premium Toolbar */}
             <div style={{
                 display: 'flex',
-                gap: '12px',
+                gap: '16px',
                 alignItems: 'center',
                 flexWrap: 'wrap',
-                padding: '20px',
                 backgroundColor: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0'
+                padding: '12px 16px',
+                borderRadius: '16px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                border: '1px solid rgba(226, 232, 240, 0.8)'
             }}>
                 {/* Search */}
                 <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
                     <Search size={18} style={{
                         position: 'absolute',
-                        left: '12px',
+                        left: '14px',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: '#94a3b8'
@@ -1177,15 +1184,126 @@ const AllTasksView = ({ userRole = 'employee', projectRole = 'employee', userId,
                         onChange={(e) => setSearchQuery(e.target.value)}
                         style={{
                             width: '100%',
-                            padding: '10px 12px 10px 40px',
+                            padding: '12px 16px 12px 42px',
+                            borderRadius: '12px',
                             border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            fontSize: '0.95rem',
-                            outline: 'none'
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            backgroundColor: '#f8fafc',
+                            transition: 'all 0.2s',
+                            color: '#334155'
                         }}
-                        onFocus={e => e.target.style.borderColor = '#3b82f6'}
-                        onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                        onFocus={(e) => {
+                            e.target.style.backgroundColor = 'white';
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.backgroundColor = '#f8fafc';
+                            e.target.style.borderColor = '#e2e8f0';
+                            e.target.style.boxShadow = 'none';
+                        }}
                     />
+                </div>
+
+                {/* Filters Group */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Date Picker */}
+                    <div style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '4px',
+                        transition: 'all 0.2s'
+                    }}>
+                        <div style={{
+                            padding: '8px 12px',
+                            color: '#64748b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRight: '1px solid #e2e8f0'
+                        }}>
+                            <Calendar size={16} />
+                        </div>
+                        <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                border: 'none',
+                                outline: 'none',
+                                backgroundColor: 'transparent',
+                                color: '#334155',
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                height: '24px',
+                                fontFamily: 'inherit',
+                                fontWeight: 500
+                            }}
+                        />
+                    </div>
+
+                    {/* Today Button */}
+                    <button
+                        onClick={() => setDateFilter(new Date().toISOString().split('T')[0])}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '12px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+                            transition: 'all 0.2s'
+                        }}
+                        title="Show Today's Tasks"
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    >
+                        <Clock size={16} />
+                        <span>Today</span>
+                    </button>
+
+                    {dateFilter && (
+                        <button
+                            onClick={() => setDateFilter('')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '12px',
+                                border: '1px solid #fee2e2',
+                                backgroundColor: '#fff1f2',
+                                color: '#e11d48',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 2px 8px rgba(225, 29, 72, 0.05)'
+                            }}
+                            title="Clear Date Filter"
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ffe4e6';
+                                e.currentTarget.style.transform = 'rotate(90deg)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#fff1f2';
+                                e.currentTarget.style.transform = 'rotate(0deg)';
+                            }}
+                        >
+                            <X size={18} />
+                        </button>
+                    )}
                 </div>
 
 

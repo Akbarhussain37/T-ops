@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Search, MessageSquare, User, FileText, ClipboardList, Receipt, File } from 'lucide-react';
+import { Bell, Search, MessageSquare, User, FileText, ClipboardList, Receipt, File, Moon, Sun } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 import NotificationDropdown from '../../../shared/NotificationDropdown';
 import { supabase } from '../../../../lib/supabaseClient';
+import { useTheme } from '../../../shared/context/ThemeContext';
+// TimerWidget removed per requirement
 
 const Header = () => {
     const { addToast } = useToast();
     const navigate = useNavigate();
-    const { userRole } = useUser();
+    const { userRole, userId, orgId } = useUser();
+    const { theme, toggleTheme } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
@@ -273,6 +276,15 @@ const Header = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                    {/* TimerWidget removed */}
+                    <button
+                        onClick={toggleTheme}
+                        style={{ position: 'relative', padding: '8px', borderRadius: '8px', backgroundColor: 'var(--background)', cursor: 'pointer', border: 'none' }}
+                        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    >
+                        {theme === 'dark' ? <Sun size={20} color="var(--text-secondary)" /> : <Moon size={20} color="var(--text-secondary)" />}
+                    </button>
+
                     <button
                         onClick={() => navigate('/employee-dashboard/settings')}
                         style={{ position: 'relative', padding: '8px', borderRadius: '8px', backgroundColor: 'var(--background)', cursor: 'pointer', border: 'none' }}
