@@ -61,6 +61,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, onMouseEnter, onMouseLeave }) => 
         { icon: MessageCircle, label: 'Messages', path: '/executive-dashboard/messages' },
         { icon: FileCheck, label: 'Policies', path: '/executive-dashboard/policies' },
         { icon: Ticket, label: 'Raise a Ticket', path: '/executive-dashboard/raise-ticket' },
+        { icon: TrendingUp, label: 'Performance Evaluation', path: '/executive-dashboard/performance-evaluation' },
     ];
 
     // Project-level menu items (Project Manager stuff)

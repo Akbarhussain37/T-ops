@@ -23,7 +23,8 @@ import {
     FolderKanban,
     FileText,
     Check,
-    Ticket
+    Ticket,
+    TrendingUp
 } from 'lucide-react';
 import { useProject } from '../../../employee/context/ProjectContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -72,6 +73,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, onMouseEnter, onMouseLeave }) => 
         { icon: MessageCircle, label: 'Messages', path: '/manager-dashboard/messages' },
         { icon: FileCheck, label: 'Policies', path: '/manager-dashboard/policies' },
         { icon: Ticket, label: 'Raise a Ticket', path: '/manager-dashboard/raise-ticket' },
+        { icon: TrendingUp, label: 'Performance Evaluation', path: '/manager-dashboard/performance-evaluation' },
     ];
 
     // Role-based project menu configurations

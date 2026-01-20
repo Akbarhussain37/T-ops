@@ -21,7 +21,8 @@ import {
     Check,
     ClipboardCheck,
     TrendingUp,
-    Ticket
+    Ticket,
+    Star
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
@@ -58,6 +59,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, onMouseEnter, onMouseLeave }) => 
         { icon: MessageCircle, label: 'Messages', path: '/employee-dashboard/messages' },
         { icon: Network, label: 'Org Hierarchy', path: '/employee-dashboard/org-hierarchy' },
         { icon: Ticket, label: 'Raise a Ticket', path: '/employee-dashboard/raise-ticket' },
+        { icon: Star, label: 'My Review', path: '/employee-dashboard/my-review' },
     ];
 
     // Role-based project menu configurations

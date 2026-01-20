@@ -20,6 +20,8 @@ import { ToastProvider } from '../manager/context/ToastContext';
 import { UserProvider } from '../manager/context/UserContext';
 // @ts-ignore
 import { ProjectProvider } from '../employee/context/ProjectContext';
+// @ts-ignore
+import PerformanceEvaluation from '../shared/PerformanceEvaluation';
 import RoleGuard from '../shared/RoleGuard';
 import '../manager/index.css';
 
@@ -52,6 +54,7 @@ export const ManagerDashboard = () => {
                                 <Route path="raise-ticket" element={<RaiseTicketPage />} />
                                 <Route path="documents" element={<ModulePage title="Project Documents" type="documents" />} />
                                 <Route path="settings" element={<ModulePage title="Settings" type="default" />} />
+                                <Route path="performance-evaluation" element={<PerformanceEvaluation userRole="manager" />} />
                             </Routes>
                         </Layout>
                     </ProjectProvider>
